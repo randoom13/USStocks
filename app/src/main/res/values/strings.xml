@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">US Stocks Info</string>
+    <string name="action_settings">Settings</string>
+    <string name="update">Update</string>
+    <string name="filter">Filter</string>
+    <string name="hint_company_id">Company SEC CIK</string>
+    <string name="hint_name_latest">The name of the company in the latest quarterly or yearly filing</string>
+    <string name="cancel">Cancel</string>
+    <string name="context_title">Multiselect</string>
+    <string name="show_companies_details">Show companies details</string>
+</resources>
