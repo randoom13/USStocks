@@ -1,4 +1,4 @@
-package amber.random.com.usstocks.fragments.base;
+package amber.random.com.usstocks.fragments.base.old;
 
 import android.app.Activity;
 import android.content.Context;
@@ -8,6 +8,7 @@ import android.support.v4.app.ListFragment;
 public class BaseContractListFragment<T> extends ListFragment {
 
     protected T mContract;
+
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);

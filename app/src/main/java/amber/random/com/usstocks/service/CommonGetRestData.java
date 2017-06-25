@@ -1,7 +1,8 @@
-package amber.random.com.usstocks.restdata;
+package amber.random.com.usstocks.service;
 
 import android.util.Log;
 
+import com.google.gson.Gson;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
@@ -10,13 +11,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 
+import amber.random.com.usstocks.exceptions.UpdateFailed;
+
 public abstract class CommonGetRestData<T> extends Thread {
 
     private static String mUrlQuery;
+    protected UpdateFailed mError;
+
     public CommonGetRestData(String urlQuery) {
         mUrlQuery = urlQuery;
     }
-    private static final String TOKEN = "36h9GzLD1Vz3avW2Mibvmg";
 
     protected abstract void processData(T result);
 
@@ -27,22 +31,26 @@ public abstract class CommonGetRestData<T> extends Thread {
         T result = null;
         try {
             OkHttpClient client = new OkHttpClient();
-            Request request = new Request.Builder().url(String.format(mUrlQuery, TOKEN)).build();
+            Request request = new Request.Builder().url(mUrlQuery).build();
             Response response = client.newCall(request).execute();
+            Reader incoming = response.body().charStream();
+            BufferedReader reader = new BufferedReader(incoming);
             if (response.isSuccessful()) {
-                Reader incoming = response.body().charStream();
-                BufferedReader reader = new BufferedReader(incoming);
-                result  = parseJsonTo(reader);
+                result = parseJsonTo(reader);
+            } else {
+                ErrorInfo errorInfo = new Gson().fromJson(reader, ErrorInfo.class);
+                mError = new UpdateFailed(errorInfo.error_code, errorInfo.error_message);
                 reader.close();
-            } else
-            {
                 Log.e(getClass().getSimpleName(), response.toString());
                 return;
             }
+            reader.close();
         } catch (Exception ex) {
+            mError = new UpdateFailed(ex);
             Log.e(getClass().getSimpleName(), "Can't parse json : ", ex);
             return;
         }
+
         if (result != null)
             processData(result);
     }

@@ -5,13 +5,10 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import amber.random.com.usstocks.fragments.base.BaseContractListFragment;
+import amber.random.com.usstocks.fragments.base.old.BaseContractListFragment;
 
 
 public class CompaniesDetailsFragment extends BaseContractListFragment<CompaniesDetailsFragment.Contract> {
-    public interface Contract{
-
-    }
     public static final String COMPANY_ID = "company_id";
     private int mCompanyId;
 
@@ -22,6 +19,7 @@ public class CompaniesDetailsFragment extends BaseContractListFragment<Companies
         fragment.setArguments(bundle);
         return fragment;
     }
+
     private static int getIdFrom(Bundle bundle){
         int id = -1;
         if (bundle != null)
@@ -35,5 +33,9 @@ public class CompaniesDetailsFragment extends BaseContractListFragment<Companies
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         mCompanyId = getIdFrom(getArguments());
         return super.onCreateView(inflater, container, savedInstanceState);
+    }
+
+    public interface Contract {
+
     }
 }

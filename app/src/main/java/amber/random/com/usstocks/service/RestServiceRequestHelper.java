@@ -1,4 +1,4 @@
-package amber.random.com.usstocks.restdata;
+package amber.random.com.usstocks.service;
 
 class RestServiceRequestHelper {
     private final static String sALL_COMPANIES = "https://api.usfundamentals.com/v1/companies/xbrl?format=json&token=%s";
@@ -6,6 +6,7 @@ class RestServiceRequestHelper {
     private final static String sCOMPANIES_INDICATORS = "https://api.usfundamentals.com/v1/indicators/xbrl?companies=%s&token=%s";
 
     //   private final static String sCOMPANIES_INDICATORS ="https://api.usfundamentals.com/v1/indicators/xbrl?indicators=%s&companies=%s&token=%s";
+
     public static String getAllCompanies(String token) {
         return String.format(sALL_COMPANIES, token);
     }

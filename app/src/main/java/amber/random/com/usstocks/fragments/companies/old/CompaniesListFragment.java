@@ -30,8 +30,8 @@ import android.widget.Toast;
 
 import amber.random.com.usstocks.R;
 import amber.random.com.usstocks.database.DataBaseHelper;
-import amber.random.com.usstocks.fragments.base.CommonMultiSelectableListFragment;
-import amber.random.com.usstocks.restdata.UpdateDatabaseService;
+import amber.random.com.usstocks.fragments.base.old.CommonMultiSelectableListFragment;
+import amber.random.com.usstocks.service.UpdateDatabaseService;
 
 
 public class CompaniesListFragment extends

@@ -6,14 +6,13 @@ import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.os.CancellationSignal;
 
-
 import java.util.Map;
 
 import amber.random.com.usstocks.database.DataBaseHelper;
 
 public abstract class BaseSelectionInfoProxy {
     public static final int CHOICE_MODE_MULTIPLE = 4;
-    public static final int CHOISE_MODE_SINGLE = 8;
+    public static final int CHOICE_MODE_SINGLE = 8;
     private static final String SELECTIONS_INFO = "selectionsinfo";
     private static final String SELECTION_MODE_INFO = "selection_mode_info";
     private final int mMaxCacheSize;
@@ -24,7 +23,7 @@ public abstract class BaseSelectionInfoProxy {
     private Cursor mCursor;
     private CancellationSignal mCancellationSignal = new CancellationSignal();
     private Activity mActivity;
-    private int mMode = CHOISE_MODE_SINGLE;
+    private int mMode = CHOICE_MODE_SINGLE;
 
     public BaseSelectionInfoProxy(int maxCacheSize, Activity activity) {
         mCursor = null;
@@ -37,7 +36,7 @@ public abstract class BaseSelectionInfoProxy {
     }
 
     public void setMode(int mode) {
-        if (mode != CHOISE_MODE_SINGLE && mode != CHOICE_MODE_MULTIPLE)
+        if (mode != CHOICE_MODE_SINGLE && mode != CHOICE_MODE_MULTIPLE)
             throw new IllegalArgumentException();
 
         this.mMode = mode;
@@ -55,7 +54,7 @@ public abstract class BaseSelectionInfoProxy {
     public void setSelection(int position, boolean isSelected) {
         if (mMode == CHOICE_MODE_MULTIPLE)
             setMultipleSelection(position, isSelected);
-        else if (mMode == CHOISE_MODE_SINGLE)
+        else if (mMode == CHOICE_MODE_SINGLE)
             setSingleSelection(position, isSelected);
     }
 
@@ -108,7 +107,7 @@ public abstract class BaseSelectionInfoProxy {
     public void onRestoreInstanceState(Bundle state) {
         if (state != null) {
             mCheckedCache = state.getParcelable(SELECTIONS_INFO);
-            mMode = state.getInt(SELECTION_MODE_INFO, CHOISE_MODE_SINGLE);
+            mMode = state.getInt(SELECTION_MODE_INFO, CHOICE_MODE_SINGLE);
         }
         if (mCheckedCache == null)
             mCheckedCache = new ParcelableSelectedCache();

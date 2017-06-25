@@ -1,14 +1,16 @@
-package amber.random.com.usstocks.restdata;
+package amber.random.com.usstocks.service;
 
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
+import android.text.TextUtils;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -21,15 +23,19 @@ import java.util.Collection;
 import java.util.List;
 
 import amber.random.com.usstocks.database.DataBaseHelper;
+import amber.random.com.usstocks.models.Company;
+import amber.random.com.usstocks.models.Indicator;
 
 public class UpdateDatabaseService extends Service {
 
     //region intent constants
+
     public final static String UPDATE_COMPLETED = "update_completed";
     public final static String COMPANIES_LIST = "companies_list";
     public final static String COMPANY_INDICATOR_LIST = "company_indicators_list";
     public final static String INDICATORS_LIST = "indicators_list";
     public final static String EXTRA_DATA_UPDATE = "update";
+    public final static String EXTRA_DATA_ERROR = "error";
     public final static String EXTRA_TOKEN = "token";
 
     //endregion intent constants
@@ -43,11 +49,19 @@ public class UpdateDatabaseService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        String tokenKey = intent.getStringExtra(EXTRA_TOKEN);
+        String token = "";
+        if (!TextUtils.isEmpty(tokenKey)) {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences
+                    (getApplicationContext());
+            token = prefs.getString(tokenKey, "");
+        }
+
         String extra = intent.getStringExtra(EXTRA_DATA_UPDATE);
         if (extra.equals(COMPANIES_LIST))
-            new GetCompaniesList(intent.getStringExtra(EXTRA_TOKEN)).start();
+            new GetCompaniesList(token).start();
         else if (extra.equals(INDICATORS_LIST)) {
-            new GetIndicatorsList(intent.getStringExtra(EXTRA_TOKEN)).start();
+            new GetIndicatorsList(token).start();
         } else {
             Log.d(getClass().getSimpleName(), "Unknown command");
         }
@@ -59,6 +73,15 @@ public class UpdateDatabaseService extends Service {
         return null;
     }
 
+    private void sentIntent(String operationName, Exception exception) {
+        Intent intent = new Intent(UPDATE_COMPLETED);
+        intent.putExtra(EXTRA_DATA_UPDATE, operationName);
+        if (exception != null)
+            intent.putExtra(EXTRA_DATA_ERROR, exception);
+
+        LocalBroadcastManager.getInstance(UpdateDatabaseService.this).sendBroadcast(intent);
+    }
+
     private class GetCompaniesList extends CommonGetRestData<Collection<Company>> {
         public GetCompaniesList(String token) {
             super(RestServiceRequestHelper.getAllCompanies(token));
@@ -66,15 +89,17 @@ public class UpdateDatabaseService extends Service {
 
         @Override
         public void run() {
-            if (isNetworkAvailable(UpdateDatabaseService.this))
-                super.run();
-            else
-                Toast.makeText(UpdateDatabaseService.this, "", Toast.LENGTH_LONG);
+            super.run();
+            if (mError != null) {
+                sentIntent(COMPANIES_LIST, mError);
+                stopSelf();
+            }
         }
 
         @Override
         protected Collection<Company> parseJsonTo(BufferedReader reader) {
-            Type collectionType = new TypeToken<Collection<Company>>() {}.getType();
+            Type collectionType = new TypeToken<Collection<Company>>() {
+            }.getType();
             Collection<Company> result = new Gson().fromJson(reader, collectionType);
             return result;
         }
@@ -84,13 +109,12 @@ public class UpdateDatabaseService extends Service {
             try {
                 DataBaseHelper dataBaseHelper = DataBaseHelper.getInstance(UpdateDatabaseService.this);
                 dataBaseHelper.addCompanies(result);
-            } catch (Exception er) {
-                Log.e(getClass().getSimpleName(), "Can't updata companies in database", er);
+                sentIntent(COMPANIES_LIST, null);
+            } catch (Exception ex) {
+                Log.e(getClass().getSimpleName(), "Can't updata companies in database", ex);
+                sentIntent(COMPANIES_LIST, mError);
             }
-            Intent intent = new Intent(UPDATE_COMPLETED);
-            intent.putExtra(EXTRA_DATA_UPDATE, COMPANIES_LIST);
-            LocalBroadcastManager.getInstance(UpdateDatabaseService.this).
-                    sendBroadcast(intent);
+
             stopSelf();
         }
     }
@@ -101,17 +125,24 @@ public class UpdateDatabaseService extends Service {
         }
 
         @Override
+        public void run() {
+            super.run();
+            if (mError != null) {
+                sentIntent(COMPANIES_LIST, mError);
+                stopSelf();
+            }
+        }
+
+        @Override
         protected void processData(Collection<Indicator> result) {
             try {
                 DataBaseHelper dataBaseHelper = DataBaseHelper.getInstance(UpdateDatabaseService.this);
                 dataBaseHelper.addIndicators(result);
-            } catch (Exception er) {
-                Log.e(getClass().getSimpleName(), "Can't updata indicators in database", er);
+                sentIntent(COMPANIES_LIST, null);
+            } catch (Exception ex) {
+                Log.e(getClass().getSimpleName(), "Can't updata indicators in database", ex);
+                sentIntent(COMPANIES_LIST, ex);
             }
-            Intent intent = new Intent(UPDATE_COMPLETED);
-            intent.putExtra(EXTRA_DATA_UPDATE, INDICATORS_LIST);
-            LocalBroadcastManager.getInstance(UpdateDatabaseService.this).
-                    sendBroadcast(intent);
             stopSelf();
         }
 

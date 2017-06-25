@@ -24,7 +24,7 @@
         </activity>
 
         <service
-            android:name=".restdata.UpdateDatabaseService"
+            android:name=".service.UpdateDatabaseService"
             android:enabled="true"
             android:exported="false"></service>
     </application>

@@ -14,11 +14,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import amber.random.com.usstocks.database.table.AllIndicatorsTable;
-import amber.random.com.usstocks.database.table.CompaniesTable;
-import amber.random.com.usstocks.database.table.SelectedCompaniesTable;
-import amber.random.com.usstocks.restdata.Company;
-import amber.random.com.usstocks.restdata.Indicator;
+import amber.random.com.usstocks.database.tables.AllIndicatorsTable;
+import amber.random.com.usstocks.database.tables.CompaniesTable;
+import amber.random.com.usstocks.database.tables.SelectedCompaniesTable;
+import amber.random.com.usstocks.models.Company;
+import amber.random.com.usstocks.models.Indicator;
 
 public class DataBaseHelper extends SQLiteOpenHelper {
     //region company table columns

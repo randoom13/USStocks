@@ -2,11 +2,13 @@ package amber.random.com.usstocks.fragments.companies;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.design.widget.Snackbar;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
@@ -23,20 +25,20 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ProgressBar;
-import android.widget.Toast;
 
 import amber.random.com.usstocks.R;
 import amber.random.com.usstocks.database.DataBaseHelper;
+import amber.random.com.usstocks.exceptions.UpdateFailed;
 import amber.random.com.usstocks.fragments.base.BaseRecyclerFragment;
 import amber.random.com.usstocks.fragments.base.BaseSelectionInfoProxy;
 import amber.random.com.usstocks.fragments.base.SelectableAdapter;
-import amber.random.com.usstocks.restdata.UpdateDatabaseService;
+import amber.random.com.usstocks.service.UpdateDatabaseService;
 
 
-public class CompaniesListFragment extends
-        BaseRecyclerFragment<CompaniesListFragment.Contract>
-        implements BaseSelectionInfoProxy.SyncCompletedCallback {
-    private static final String TOKEN = "";
+public class CompaniesFragment extends
+        BaseRecyclerFragment<CompaniesFragment.Contract>
+        implements BaseSelectionInfoProxy.SyncCompletedCallback, DialogInterface.OnClickListener {
+    //  private static final String TOKEN = "36h9GzLD1Vz3avW2Mibvmg";
     private final static String sSTATE_QUERY = "jk";
     private EditText mFilter;
     private ProgressBar mProgress;
@@ -45,11 +47,40 @@ public class CompaniesListFragment extends
     private BroadcastReceiver mOnUpdateCompleted = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (intent.getStringExtra(UpdateDatabaseService.EXTRA_DATA_UPDATE).
+            if (!intent.getStringExtra(UpdateDatabaseService.EXTRA_DATA_UPDATE).
                     equals(UpdateDatabaseService.COMPANIES_LIST))
+                return;
+
+            UpdateFailed updateFailed = (UpdateFailed) intent.getSerializableExtra(UpdateDatabaseService.EXTRA_DATA_ERROR);
+            if (updateFailed == null) {
                 new LoadCompaniesList().start();
+                return;
+            }
+
+            mProgress.setVisibility(View.GONE);
+            if (updateFailed.invalidToken()) {
+                mProgress.setVisibility(View.VISIBLE);
+                mContract.showTokenDialog(getString(R.string.invalid_token), CompaniesFragment.this);
+                return;
+            }
+
+            Snackbar snackbar = Snackbar.make(getRecyclerView(), "Failed to update companies!", Snackbar.LENGTH_LONG);
+            snackbar.show();
         }
     };
+
+    @Override
+    public void onClick(DialogInterface dialog, int which) {
+        verifyLiveToken();
+    }
+
+    private void verifyLiveToken() {
+        if (mContract.hasToken())
+            launchService();
+        else
+            mContract.showTokenDialog(getString(R.string.invalid_token), this);
+    }
+
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
@@ -193,12 +224,18 @@ public class CompaniesListFragment extends
     private void launchService() {
         Intent intent = new Intent(getActivity(), UpdateDatabaseService.class);
         intent.putExtra(UpdateDatabaseService.EXTRA_DATA_UPDATE, UpdateDatabaseService.COMPANIES_LIST);
-        intent.putExtra(UpdateDatabaseService.EXTRA_TOKEN, TOKEN);
+        intent.putExtra(UpdateDatabaseService.EXTRA_TOKEN, mContract.getTokenKey());
         getActivity().startService(intent);
     }
 
     public interface Contract {
         void showDetails(String filter);
+
+        void showTokenDialog(String desc, DialogInterface.OnClickListener listener);
+
+        String getTokenKey();
+
+        boolean hasToken();
     }
 
     private class LoadCompaniesList extends Thread {
@@ -217,11 +254,13 @@ public class CompaniesListFragment extends
                 @Override
                 public void run() {
                     mProgress.setVisibility(View.GONE);
-                    Toast.makeText(getActivity(), "Failed to load companies",
-                            Toast.LENGTH_LONG).show();
+                    Snackbar snackbar = Snackbar.make(getRecyclerView(),
+                            "Failed to load companies", Snackbar.LENGTH_LONG);
+                    snackbar.show();
                 }
             });
         }
+
 
         @Override
         public void run() {
@@ -232,7 +271,7 @@ public class CompaniesListFragment extends
                 final Integer maxId = dataBaseHelper.getMaxId(filter);
                 final Cursor cursor = dataBaseHelper.getCompanies(filter);
                 if (cursor == null) {
-                    Log.e(CompaniesListFragment.this.getClass().getSimpleName(), "Can't load companies");
+                    Log.e(CompaniesFragment.this.getClass().getSimpleName(), "Can't load companies");
                     onFailed();
                 }
                 // Anyway, operation cursor.getCount() executes on main thread
@@ -258,7 +297,7 @@ public class CompaniesListFragment extends
                     });
                 }
             } catch (Exception ex) {
-                Log.e(CompaniesListFragment.this.getClass().getSimpleName(), "Can't load companies", ex);
+                Log.e(CompaniesFragment.this.getClass().getSimpleName(), "Can't load companies", ex);
                 onFailed();
             }
         }

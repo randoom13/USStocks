@@ -8,7 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.ViewHolder>
-        extends RecyclerView.Adapter<Holder>  implements SelectableAdapter {
+        extends RecyclerView.Adapter<Holder> implements SelectableAdapter {
     protected final LayoutInflater mInflater;
     private final BaseRecyclerFragment mRecyclerFragment;
     protected BaseSelectionInfoProxy mSelectionInfoProxy;
@@ -82,7 +82,7 @@ public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.View
 
     @Override
     public void closeMultiSelectMode() {
-        mSelectionInfoProxy.setMode(BaseSelectionInfoProxy.CHOISE_MODE_SINGLE);
+        mSelectionInfoProxy.setMode(BaseSelectionInfoProxy.CHOICE_MODE_SINGLE);
         mRecyclerFragment.getActivity().invalidateOptionsMenu();
     }
 

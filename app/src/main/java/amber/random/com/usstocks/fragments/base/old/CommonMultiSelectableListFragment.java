@@ -1,4 +1,4 @@
-package amber.random.com.usstocks.fragments.base;
+package amber.random.com.usstocks.fragments.base.old;
 
 import android.os.Bundle;
 import android.view.ActionMode;
@@ -8,8 +8,6 @@ import android.view.View;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.ListView;
-
-import amber.random.com.usstocks.fragments.base.BaseContractListFragment;
 
 public abstract class CommonMultiSelectableListFragment<T> extends BaseContractListFragment<T>
         implements AdapterView.OnItemLongClickListener, AbsListView.MultiChoiceModeListener {

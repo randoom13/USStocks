@@ -1,4 +1,4 @@
-package amber.random.com.usstocks.database.table;
+package amber.random.com.usstocks.database.tables;
 
 
 public class SelectedCompaniesTable {

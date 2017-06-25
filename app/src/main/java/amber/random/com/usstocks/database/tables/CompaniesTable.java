@@ -1,4 +1,4 @@
-package amber.random.com.usstocks.database.table;
+package amber.random.com.usstocks.database.tables;
 
 public class CompaniesTable {
     public final String mID = "company_id";
@@ -6,6 +6,7 @@ public class CompaniesTable {
     public final String mName = "companies";
     public final String mPrevious_Names = "names_previous";
     public final String mCreateScript;
+
     //Unfortunately, REPLACE works wrong in virtual table. It always insert new row.
     //"CREATE VIRTUAL TABLE %s USING fts3("
     public CompaniesTable() {
