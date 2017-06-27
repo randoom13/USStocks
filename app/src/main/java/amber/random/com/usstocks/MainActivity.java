@@ -1,7 +1,6 @@
 package amber.random.com.usstocks;
 
 
-import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.StrictMode;
@@ -16,7 +15,7 @@ import amber.random.com.usstocks.fragments.companies_details.PrimaryCompaniesDet
 
 
 public class MainActivity extends AppCompatActivity implements CompaniesFragment.Contract,
-        CompaniesDetailsFragment.Contract, DialogInterface.OnClickListener {
+        CompaniesDetailsFragment.Contract, TokenDialogFragment.TokenDialogListener {
     public static final String COMPANIES_TAG = "companies_tag";
     public static final String COMPANY_DETAILS_TAG = "company_details_tag";
     public static final String TOKEN_KEY = "unique_token";
@@ -37,7 +36,10 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
     }
 
     @Override
-    public void onClick(DialogInterface dialog, int which) {
+    public void onClick(boolean isClose) {
+        if (isClose)
+            finish();
+
         verifyLiveToken();
     }
 
@@ -47,7 +49,6 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
         else
             showTokenDialog(getString(R.string.token_dialog_desc), this);
     }
-
 
     private void initializeFragments() {
         if (mCompaniesFragment == null) {
@@ -86,12 +87,12 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
 
 
     @Override
-    public void showTokenDialog(String desc, DialogInterface.OnClickListener listener) {
+    public void showTokenDialog(String desc, TokenDialogFragment.TokenDialogListener listener) {
         TokenDialogFragment dialogFragment = TokenDialogFragment.newInstance(TOKEN_KEY, desc);
         if (listener != null)
-            dialogFragment.addListener(listener);
-        dialogFragment
-                .show(getSupportFragmentManager(), TOKEN_TAG);
+            dialogFragment.addClickListener(listener);
+
+        dialogFragment.show(getSupportFragmentManager(), TOKEN_TAG);
     }
 
     //endregion CompaniesFragment.Contract implementation

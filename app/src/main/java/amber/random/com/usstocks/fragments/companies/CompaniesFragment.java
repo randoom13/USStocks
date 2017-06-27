@@ -2,7 +2,6 @@ package amber.random.com.usstocks.fragments.companies;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
@@ -29,6 +28,7 @@ import android.widget.ProgressBar;
 import amber.random.com.usstocks.R;
 import amber.random.com.usstocks.database.DataBaseHelper;
 import amber.random.com.usstocks.exceptions.UpdateFailed;
+import amber.random.com.usstocks.fragments.TokenDialogFragment;
 import amber.random.com.usstocks.fragments.base.BaseRecyclerFragment;
 import amber.random.com.usstocks.fragments.base.BaseSelectionInfoProxy;
 import amber.random.com.usstocks.fragments.base.SelectableAdapter;
@@ -37,8 +37,7 @@ import amber.random.com.usstocks.service.UpdateDatabaseService;
 
 public class CompaniesFragment extends
         BaseRecyclerFragment<CompaniesFragment.Contract>
-        implements BaseSelectionInfoProxy.SyncCompletedCallback, DialogInterface.OnClickListener {
-    //  private static final String TOKEN = "36h9GzLD1Vz3avW2Mibvmg";
+        implements BaseSelectionInfoProxy.SyncCompletedCallback, TokenDialogFragment.TokenDialogListener {
     private final static String sSTATE_QUERY = "jk";
     private EditText mFilter;
     private ProgressBar mProgress;
@@ -70,7 +69,9 @@ public class CompaniesFragment extends
     };
 
     @Override
-    public void onClick(DialogInterface dialog, int which) {
+    public void onClick(boolean isClose) {
+        if (isClose)
+            getActivity().finish();
         verifyLiveToken();
     }
 
@@ -231,7 +232,7 @@ public class CompaniesFragment extends
     public interface Contract {
         void showDetails(String filter);
 
-        void showTokenDialog(String desc, DialogInterface.OnClickListener listener);
+        void showTokenDialog(String desc, TokenDialogFragment.TokenDialogListener listener);
 
         String getTokenKey();
 

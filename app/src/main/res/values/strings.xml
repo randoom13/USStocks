@@ -10,6 +10,6 @@
     <string name="show_companies_details">Show companies details</string>
     <string name="token">Token:</string>
     <string name="token_dialog_title">Access token</string>
-    <string name="token_dialog_desc">To get access to the fundamental stock data it require authentication token, which you can get on <a href="https://account.usfundamentals.com/signup">registration</a></string>
-    <string name="invalid_token">The auth token provided in the URL is not valid. Check it on your <a href="https://account.usfundamentals.com">registration account page</a>.</string>
+    <string name="token_dialog_desc">To get access to the fundamental stock data it require authentication token, which you can get on <a href="https://account.usfundamentals.com/signup">https://account.usfundamentals.com/signup</a></string>
+    <string name="invalid_token">The provided auth token is not valid. Check it on your <a href="https://account.usfundamentals.com">https://account.usfundamentals.com</a>.</string>
 </resources>
