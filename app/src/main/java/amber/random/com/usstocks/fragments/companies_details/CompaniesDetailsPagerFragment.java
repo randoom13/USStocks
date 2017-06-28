@@ -5,8 +5,11 @@ import android.database.Cursor;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 
+import javax.inject.Inject;
+
 import amber.random.com.usstocks.database.DataBaseHelper;
 import amber.random.com.usstocks.fragments.base.BaseCursorPagerFragment;
+import amber.random.com.usstocks.injection.App;
 
 
 public class CompaniesDetailsPagerFragment extends BaseCursorPagerFragment {
@@ -36,7 +39,9 @@ public class CompaniesDetailsPagerFragment extends BaseCursorPagerFragment {
         return in.toString();
     }
 
-    private class ThreadLoadCursor extends Thread {
+    public class ThreadLoadCursor extends Thread {
+        @Inject
+        protected DataBaseHelper mDataBaseHelper;
         private Activity mActivity;
         private String mFilter;
 
@@ -47,8 +52,8 @@ public class CompaniesDetailsPagerFragment extends BaseCursorPagerFragment {
 
         @Override
         public void run() {
-            DataBaseHelper dataBaseHelper = DataBaseHelper.getInstance(mActivity);
-            final Cursor cursor = dataBaseHelper.getSelectedCompanies(mFilter);
+            ((App) mActivity.getApplication()).getRequestComponent().inject(this);
+            final Cursor cursor = mDataBaseHelper.getSelectedCompanies(mFilter);
             cursor.moveToFirst();
             mActivity.runOnUiThread(new Runnable() {
                 @Override

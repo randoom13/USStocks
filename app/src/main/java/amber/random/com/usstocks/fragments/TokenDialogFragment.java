@@ -57,8 +57,7 @@ public class TokenDialogFragment extends DialogFragment
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         return builder.setTitle(R.string.token_dialog_title).setView(form)
-                .setPositiveButton(android.R.string.ok, this)
-                .setNegativeButton(android.R.string.no, this).
+                .setPositiveButton(android.R.string.ok, this).
                         create();
     }
 

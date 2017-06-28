@@ -34,14 +34,8 @@ public class DataBaseHelper extends SQLiteOpenHelper {
     private AllIndicatorsTable mAllIndicatorsTable = new AllIndicatorsTable();
     private SelectedCompaniesTable mSelectedCompaniesTable = new SelectedCompaniesTable();
 
-    DataBaseHelper(Context context) {
+    public DataBaseHelper(Context context) {
         super(context, DATABASE_NAME, null, SCHEMA);
-    }
-
-    public static synchronized DataBaseHelper getInstance(Context context) {
-        if (sINSTANCE == null)
-            sINSTANCE = new DataBaseHelper(context.getApplicationContext());
-        return sINSTANCE;
     }
 
     private static String toString(String[] items) {

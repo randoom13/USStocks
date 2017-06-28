@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import amber.random.com.usstocks.database.DataBaseHelper;
+import amber.random.com.usstocks.injection.App;
 import amber.random.com.usstocks.models.Company;
 import amber.random.com.usstocks.models.Indicator;
 
@@ -82,13 +82,14 @@ public class UpdateDatabaseService extends Service {
         LocalBroadcastManager.getInstance(UpdateDatabaseService.this).sendBroadcast(intent);
     }
 
-    private class GetCompaniesList extends CommonGetRestData<Collection<Company>> {
+    public class GetCompaniesList extends CommonGetRestData<Collection<Company>> {
         public GetCompaniesList(String token) {
             super(RestServiceRequestHelper.getAllCompanies(token));
         }
 
         @Override
         public void run() {
+            ((App) getApplication()).getRequestComponent().inject(this);
             super.run();
             if (mError != null) {
                 sentIntent(COMPANIES_LIST, mError);
@@ -107,8 +108,7 @@ public class UpdateDatabaseService extends Service {
         @Override
         protected void processData(Collection<Company> result) {
             try {
-                DataBaseHelper dataBaseHelper = DataBaseHelper.getInstance(UpdateDatabaseService.this);
-                dataBaseHelper.addCompanies(result);
+                mDataBaseHelper.addCompanies(result);
                 sentIntent(COMPANIES_LIST, null);
             } catch (Exception ex) {
                 Log.e(getClass().getSimpleName(), "Can't updata companies in database", ex);
@@ -119,13 +119,14 @@ public class UpdateDatabaseService extends Service {
         }
     }
 
-    private class GetIndicatorsList extends CommonGetRestData<Collection<Indicator>> {
+    public class GetIndicatorsList extends CommonGetRestData<Collection<Indicator>> {
         public GetIndicatorsList(String token) {
             super(RestServiceRequestHelper.getAllIndicators(token));
         }
 
         @Override
         public void run() {
+            ((App) getApplication()).getRequestComponent().inject(this);
             super.run();
             if (mError != null) {
                 sentIntent(COMPANIES_LIST, mError);
@@ -136,8 +137,7 @@ public class UpdateDatabaseService extends Service {
         @Override
         protected void processData(Collection<Indicator> result) {
             try {
-                DataBaseHelper dataBaseHelper = DataBaseHelper.getInstance(UpdateDatabaseService.this);
-                dataBaseHelper.addIndicators(result);
+                mDataBaseHelper.addIndicators(result);
                 sentIntent(COMPANIES_LIST, null);
             } catch (Exception ex) {
                 Log.e(getClass().getSimpleName(), "Can't updata indicators in database", ex);

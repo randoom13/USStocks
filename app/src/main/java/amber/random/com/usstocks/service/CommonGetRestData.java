@@ -11,12 +11,17 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
 
+import javax.inject.Inject;
+
+import amber.random.com.usstocks.database.DataBaseHelper;
 import amber.random.com.usstocks.exceptions.UpdateFailed;
 
 public abstract class CommonGetRestData<T> extends Thread {
 
     private static String mUrlQuery;
     protected UpdateFailed mError;
+    @Inject
+    protected DataBaseHelper mDataBaseHelper;
 
     public CommonGetRestData(String urlQuery) {
         mUrlQuery = urlQuery;

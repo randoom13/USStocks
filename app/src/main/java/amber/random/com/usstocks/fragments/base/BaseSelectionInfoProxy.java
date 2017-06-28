@@ -8,6 +8,8 @@ import android.support.v4.os.CancellationSignal;
 
 import java.util.Map;
 
+import javax.inject.Inject;
+
 import amber.random.com.usstocks.database.DataBaseHelper;
 
 public abstract class BaseSelectionInfoProxy {
@@ -18,11 +20,11 @@ public abstract class BaseSelectionInfoProxy {
     private final int mMaxCacheSize;
     private final Object mlock = new Object();
     protected String mFilter = "";
+    protected Activity mActivity;
     private ParcelableSelectedCache mCheckedCache = new ParcelableSelectedCache();
     private boolean mSyncing = false;
     private Cursor mCursor;
     private CancellationSignal mCancellationSignal = new CancellationSignal();
-    private Activity mActivity;
     private int mMode = CHOICE_MODE_SINGLE;
 
     public BaseSelectionInfoProxy(int maxCacheSize, Activity activity) {
@@ -183,6 +185,8 @@ public abstract class BaseSelectionInfoProxy {
 
     public abstract class BaseSyncWithDataBaseRunnable implements Runnable {
         protected final boolean mResetSelection;
+        @Inject
+        protected DataBaseHelper mDataBaseHelper;
         protected CancellationSignal mCancellation;
         private boolean mIsHandleException;
         private SyncCompletedCallback mCompletedCallback;
@@ -206,11 +210,12 @@ public abstract class BaseSelectionInfoProxy {
         public void run() {
             try {
                 String filter = mFilter;
-                DataBaseHelper database = DataBaseHelper.getInstance(mActivity);
                 Map<Integer, Boolean> syncCheckedCache =
-                        getSyncCheckedinfo(database, mCheckedCache);
+                        getSyncCheckedinfo(mDataBaseHelper,
+                                mCheckedCache);
 
-                Cursor cursor = database.getCompaniesCheckedState(filter);
+                Cursor cursor = mDataBaseHelper
+                        .getCompaniesCheckedState(filter);
                 if (mCancellation.isCanceled() || !mFilter.equals(filter))
                     return;
 

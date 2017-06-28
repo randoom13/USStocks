@@ -25,6 +25,8 @@ import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 
+import javax.inject.Inject;
+
 import amber.random.com.usstocks.R;
 import amber.random.com.usstocks.database.DataBaseHelper;
 import amber.random.com.usstocks.exceptions.UpdateFailed;
@@ -32,6 +34,7 @@ import amber.random.com.usstocks.fragments.TokenDialogFragment;
 import amber.random.com.usstocks.fragments.base.BaseRecyclerFragment;
 import amber.random.com.usstocks.fragments.base.BaseSelectionInfoProxy;
 import amber.random.com.usstocks.fragments.base.SelectableAdapter;
+import amber.random.com.usstocks.injection.App;
 import amber.random.com.usstocks.service.UpdateDatabaseService;
 
 
@@ -239,7 +242,9 @@ public class CompaniesFragment extends
         boolean hasToken();
     }
 
-    private class LoadCompaniesList extends Thread {
+    public class LoadCompaniesList extends Thread {
+        @Inject
+        protected DataBaseHelper mDataBaseHelper;
         private boolean mForceUpdateDatabase;
 
         public LoadCompaniesList() {
@@ -266,11 +271,10 @@ public class CompaniesFragment extends
         @Override
         public void run() {
             try {
-                DataBaseHelper dataBaseHelper = DataBaseHelper.getInstance(getActivity());
                 String filter = mFilter.getText().toString();
-
-                final Integer maxId = dataBaseHelper.getMaxId(filter);
-                final Cursor cursor = dataBaseHelper.getCompanies(filter);
+                ((App) getActivity().getApplication()).getRequestComponent().inject(this);
+                final Integer maxId = mDataBaseHelper.getMaxId(filter);
+                final Cursor cursor = mDataBaseHelper.getCompanies(filter);
                 if (cursor == null) {
                     Log.e(CompaniesFragment.this.getClass().getSimpleName(), "Can't load companies");
                     onFailed();

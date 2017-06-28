@@ -8,6 +8,7 @@ import java.util.Map;
 
 import amber.random.com.usstocks.database.DataBaseHelper;
 import amber.random.com.usstocks.fragments.base.BaseSelectionInfoProxy;
+import amber.random.com.usstocks.injection.App;
 
 public class CompaniesSelectionInfoProxy extends BaseSelectionInfoProxy {
     public CompaniesSelectionInfoProxy(int maxCacheSize, Activity activity) {
@@ -26,11 +27,17 @@ public class CompaniesSelectionInfoProxy extends BaseSelectionInfoProxy {
         else runnable.run();
     }
 
-    protected class SyncWithDataBaseRunnable extends BaseSyncWithDataBaseRunnable {
+    public class SyncWithDataBaseRunnable extends BaseSyncWithDataBaseRunnable {
 
         public SyncWithDataBaseRunnable(boolean isHandleException, CancellationSignal cancellation,
                                         boolean resetSelection) {
             super(isHandleException, cancellation, resetSelection);
+        }
+
+        @Override
+        public void run() {
+            ((App) mActivity.getApplication()).getRequestComponent().inject(this);
+            super.run();
         }
 
         @Override
