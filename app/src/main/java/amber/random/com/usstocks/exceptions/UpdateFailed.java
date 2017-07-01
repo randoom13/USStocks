@@ -1,31 +1,24 @@
 package amber.random.com.usstocks.exceptions;
 
-/**
- * Created by akhlivnyuk on 6/22/2017.
- */
+import com.jakewharton.retrofit2.adapter.rxjava2.HttpException;
 
 public class UpdateFailed extends Exception {
+    private static final int SINVALID_TOKEN = 403;
     public final String mError_code;
     public final String mError_message;
-    public final boolean isInternetException;
-    public final Exception mInnerException;
-    private final String INVALID_TOKEN = "invalid_auth_token";
+    public final Throwable mInnerException;
 
-    public UpdateFailed(String error_code, String error_message) {
-        mError_code = error_code;
-        mError_message = error_message;
-        isInternetException = true;
-        mInnerException = null;
-    }
 
-    public UpdateFailed(Exception innerException) {
+    public UpdateFailed(Throwable innerException) {
         mInnerException = innerException;
         mError_code = null;
         mError_message = null;
-        isInternetException = false;
     }
 
     public boolean invalidToken() {
-        return isInternetException && mError_code.equals(INVALID_TOKEN);
+        if (!(mInnerException instanceof HttpException))
+            return false;
+        HttpException exception = (HttpException) mInnerException;
+        return exception.response() != null && exception.response().code() == 403;
     }
 }

@@ -12,6 +12,7 @@ import android.util.Log;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import amber.random.com.usstocks.database.tables.AllIndicatorsTable;
@@ -38,7 +39,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         super(context, DATABASE_NAME, null, SCHEMA);
     }
 
-    private static String toString(String[] items) {
+    private static String toString(List<String> items) {
         StringBuilder builder = new StringBuilder();
         if (items != null) {
             boolean hasItems = false;
@@ -234,9 +235,9 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         try {
             for (Company company : companies) {
                 ContentValues values = new ContentValues();
-                values.put(mCompaniesTable.mLATEST_NAME, company.latestName);
-                values.put(mCompaniesTable.mID, company.id);
-                values.put(mCompaniesTable.mPrevious_Names, toString(company.previousNames));
+                values.put(mCompaniesTable.mLATEST_NAME, company.latestName());
+                values.put(mCompaniesTable.mID, company.id());
+                values.put(mCompaniesTable.mPrevious_Names, toString(company.previousNames()));
                 database.replace(mCompaniesTable.mName, null, values);
             }
             database.setTransactionSuccessful();

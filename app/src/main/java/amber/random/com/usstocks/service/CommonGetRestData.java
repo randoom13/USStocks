@@ -2,7 +2,6 @@ package amber.random.com.usstocks.service;
 
 import android.util.Log;
 
-import com.google.gson.Gson;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
@@ -22,6 +21,8 @@ public abstract class CommonGetRestData<T> extends Thread {
     protected UpdateFailed mError;
     @Inject
     protected DataBaseHelper mDataBaseHelper;
+    @Inject
+    protected BackendService mBackendService;
 
     public CommonGetRestData(String urlQuery) {
         mUrlQuery = urlQuery;
@@ -42,14 +43,8 @@ public abstract class CommonGetRestData<T> extends Thread {
             BufferedReader reader = new BufferedReader(incoming);
             if (response.isSuccessful()) {
                 result = parseJsonTo(reader);
-            } else {
-                ErrorInfo errorInfo = new Gson().fromJson(reader, ErrorInfo.class);
-                mError = new UpdateFailed(errorInfo.error_code, errorInfo.error_message);
                 reader.close();
-                Log.e(getClass().getSimpleName(), response.toString());
-                return;
             }
-            reader.close();
         } catch (Exception ex) {
             mError = new UpdateFailed(ex);
             Log.e(getClass().getSimpleName(), "Can't parse json : ", ex);

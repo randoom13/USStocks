@@ -12,24 +12,24 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import javax.inject.Inject;
+
+import amber.random.com.usstocks.database.DataBaseHelper;
+import amber.random.com.usstocks.exceptions.UpdateFailed;
 import amber.random.com.usstocks.injection.App;
-import amber.random.com.usstocks.models.Company;
 import amber.random.com.usstocks.models.Indicator;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 public class UpdateDatabaseService extends Service {
 
     //region intent constants
-
     public final static String UPDATE_COMPLETED = "update_completed";
     public final static String COMPANIES_LIST = "companies_list";
     public final static String COMPANY_INDICATOR_LIST = "company_indicators_list";
@@ -37,8 +37,12 @@ public class UpdateDatabaseService extends Service {
     public final static String EXTRA_DATA_UPDATE = "update";
     public final static String EXTRA_DATA_ERROR = "error";
     public final static String EXTRA_TOKEN = "token";
-
+    @Inject
+    protected DataBaseHelper mDataBaseHelper;
     //endregion intent constants
+    @Inject
+    protected BackendService mBackendService;
+    private Disposable mDisposable;
 
     private static boolean isNetworkAvailable(Context context) {
         ConnectivityManager connectivityManager = (ConnectivityManager)
@@ -59,7 +63,7 @@ public class UpdateDatabaseService extends Service {
 
         String extra = intent.getStringExtra(EXTRA_DATA_UPDATE);
         if (extra.equals(COMPANIES_LIST))
-            new GetCompaniesList(token).start();
+            getCompaniesList(token);
         else if (extra.equals(INDICATORS_LIST)) {
             new GetIndicatorsList(token).start();
         } else {
@@ -69,54 +73,47 @@ public class UpdateDatabaseService extends Service {
     }
 
     @Override
+    public void onDestroy() {
+        if (mDisposable != null && !mDisposable.isDisposed()) {
+            mDisposable.dispose();
+            mDisposable = null;
+        }
+        super.onDestroy();
+    }
+
+    @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
 
-    private void sentIntent(String operationName, Exception exception) {
+    private void sentIntent(String operationName, Throwable exception) {
         Intent intent = new Intent(UPDATE_COMPLETED);
         intent.putExtra(EXTRA_DATA_UPDATE, operationName);
         if (exception != null)
-            intent.putExtra(EXTRA_DATA_ERROR, exception);
-
+            intent.putExtra(EXTRA_DATA_ERROR, new UpdateFailed(exception));
         LocalBroadcastManager.getInstance(UpdateDatabaseService.this).sendBroadcast(intent);
     }
 
-    public class GetCompaniesList extends CommonGetRestData<Collection<Company>> {
-        public GetCompaniesList(String token) {
-            super(RestServiceRequestHelper.getAllCompanies(token));
-        }
-
-        @Override
-        public void run() {
-            ((App) getApplication()).getRequestComponent().inject(this);
-            super.run();
-            if (mError != null) {
-                sentIntent(COMPANIES_LIST, mError);
-                stopSelf();
-            }
-        }
-
-        @Override
-        protected Collection<Company> parseJsonTo(BufferedReader reader) {
-            Type collectionType = new TypeToken<Collection<Company>>() {
-            }.getType();
-            Collection<Company> result = new Gson().fromJson(reader, collectionType);
-            return result;
-        }
-
-        @Override
-        protected void processData(Collection<Company> result) {
-            try {
-                mDataBaseHelper.addCompanies(result);
-                sentIntent(COMPANIES_LIST, null);
-            } catch (Exception ex) {
-                Log.e(getClass().getSimpleName(), "Can't updata companies in database", ex);
-                sentIntent(COMPANIES_LIST, mError);
-            }
-
-            stopSelf();
-        }
+    private void getCompaniesList(String token) {
+        ((App) getApplication()).getRequestComponent().inject(this);
+        mDisposable = mBackendService.getAllCompanies(token)
+                .subscribeOn(Schedulers.computation())
+                .observeOn(Schedulers.io())
+                .onErrorReturn(ex -> {
+                    sentIntent(COMPANIES_LIST, ex);
+                    return null;
+                })
+                .subscribe(companies ->
+                {
+                    if (companies != null) {
+                        mDataBaseHelper.addCompanies(companies);
+                        sentIntent(COMPANIES_LIST, null);
+                        stopSelf();
+                    }
+                }, er -> {
+                    sentIntent(COMPANIES_LIST, er);
+                    stopSelf();
+                });
     }
 
     public class GetIndicatorsList extends CommonGetRestData<Collection<Indicator>> {

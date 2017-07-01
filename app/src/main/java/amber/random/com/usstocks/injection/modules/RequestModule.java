@@ -1,4 +1,4 @@
-package amber.random.com.usstocks.injection;
+package amber.random.com.usstocks.injection.modules;
 
 import android.app.Application;
 

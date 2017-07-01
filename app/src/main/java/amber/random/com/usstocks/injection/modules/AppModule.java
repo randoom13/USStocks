@@ -1,6 +1,8 @@
-package amber.random.com.usstocks.injection;
+package amber.random.com.usstocks.injection.modules;
 
 import android.app.Application;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 
 import javax.inject.Singleton;
 
@@ -19,5 +21,11 @@ public class AppModule {
     @Singleton
     public Application getApplication() {
         return mMainApplication;
+    }
+
+    @Provides
+    @Singleton
+    public SharedPreferences provides(Application app) {
+        return PreferenceManager.getDefaultSharedPreferences(app);
     }
 }
