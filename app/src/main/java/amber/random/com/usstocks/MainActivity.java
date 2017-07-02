@@ -11,17 +11,16 @@ import android.text.TextUtils;
 import amber.random.com.usstocks.fragments.TokenDialogFragment;
 import amber.random.com.usstocks.fragments.companies.CompaniesFragment;
 import amber.random.com.usstocks.fragments.companies_details.CompaniesDetailsFragment;
-import amber.random.com.usstocks.fragments.companies_details.PrimaryCompaniesDetailsFragment;
 
 
 public class MainActivity extends AppCompatActivity implements CompaniesFragment.Contract,
-        CompaniesDetailsFragment.Contract, TokenDialogFragment.TokenDialogListener {
+        TokenDialogFragment.TokenDialogListener {
     public static final String COMPANIES_TAG = "companies_tag";
     public static final String COMPANY_DETAILS_TAG = "company_details_tag";
     public static final String TOKEN_KEY = "unique_token";
     public static final String TOKEN_TAG = "token_dialog_tag";
     private CompaniesFragment mCompaniesFragment = null;
-    private PrimaryCompaniesDetailsFragment mCompaniesDetailsFragment = null;
+    private CompaniesDetailsFragment mCompaniesDetailsFragment = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,7 +29,7 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
         setupStrictMode();
         mCompaniesFragment = (CompaniesFragment) getSupportFragmentManager()
                 .findFragmentByTag(COMPANIES_TAG);
-        mCompaniesDetailsFragment = (PrimaryCompaniesDetailsFragment) getSupportFragmentManager()
+        mCompaniesDetailsFragment = (CompaniesDetailsFragment) getSupportFragmentManager()
                 .findFragmentByTag(COMPANY_DETAILS_TAG);
         verifyLiveToken();
     }
@@ -57,8 +56,9 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
                     .add(R.id.mainfrag, mCompaniesFragment, COMPANIES_TAG)
                     .commit();
         }
+
         if (mCompaniesDetailsFragment == null) {
-            mCompaniesDetailsFragment = new PrimaryCompaniesDetailsFragment();
+            mCompaniesDetailsFragment = new CompaniesDetailsFragment();
         }
     }
 
@@ -78,7 +78,7 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
 
     @Override
     public void showDetails(String filter) {
-        mCompaniesDetailsFragment = PrimaryCompaniesDetailsFragment.newInstance(filter);
+        mCompaniesDetailsFragment = CompaniesDetailsFragment.newInstance(filter);
         getSupportFragmentManager().beginTransaction().hide(mCompaniesFragment)
                 .addToBackStack(null)
                 .add(R.id.mainfrag, mCompaniesDetailsFragment, COMPANY_DETAILS_TAG)

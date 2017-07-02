@@ -4,7 +4,7 @@ import javax.inject.Singleton;
 
 import amber.random.com.usstocks.fragments.companies.CompaniesFragment;
 import amber.random.com.usstocks.fragments.companies.CompaniesSelectionInfoProxy;
-import amber.random.com.usstocks.fragments.companies_details.CompaniesDetailsPagerFragment;
+import amber.random.com.usstocks.fragments.companies_details.CompaniesDetailsFragment;
 import amber.random.com.usstocks.injection.modules.AppModule;
 import amber.random.com.usstocks.injection.modules.NetworkModule;
 import amber.random.com.usstocks.injection.modules.RequestModule;
@@ -16,9 +16,9 @@ import dagger.Component;
 public interface RequestComponent {
     void inject(UpdateDatabaseService service);
 
+    void inject(CompaniesDetailsFragment detailsFragment2);
+
     void inject(CompaniesFragment companiesFragment);
 
     void inject(CompaniesSelectionInfoProxy syncWithDataBaseRunnable);
-
-    void inject(CompaniesDetailsPagerFragment.ThreadLoadCursor threadLoadCursor);
 }

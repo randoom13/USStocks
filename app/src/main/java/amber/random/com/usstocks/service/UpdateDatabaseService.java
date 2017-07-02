@@ -109,11 +109,6 @@ public class UpdateDatabaseService extends Service {
                 });
     }
 
-    @Override
-    public boolean stopService(Intent name) {
-        return super.stopService(name);
-    }
-
     private void getIndicatorsList(String token) {
         ((App) getApplication()).getRequestComponent().inject(this);
         mDisposable = mBackendService.getAllIndicators(token)
