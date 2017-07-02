@@ -1,4 +1,4 @@
-package amber.random.com.usstocks.fragments.base.old;
+package amber.random.com.usstocks.fragments.base;
 
 import android.app.Activity;
 import android.content.Context;

@@ -219,8 +219,8 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         try {
             for (Indicator indicator : companies) {
                 ContentValues values = new ContentValues();
-                values.put(mAllIndicatorsTable.mName, toParse(indicator.mNames));
-                values.put(mAllIndicatorsTable.mID, indicator.mId);
+                values.put(mAllIndicatorsTable.mName, toParse(indicator.mNames()));
+                values.put(mAllIndicatorsTable.mID, indicator.mId());
                 database.replaceOrThrow(mAllIndicatorsTable.mName, null, values);
             }
             database.setTransactionSuccessful();

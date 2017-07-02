@@ -7,6 +7,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import io.reactivex.Observable;
+
 public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.ViewHolder>
         extends RecyclerView.Adapter<Holder> implements SelectableAdapter {
     protected final LayoutInflater mInflater;
@@ -54,14 +56,9 @@ public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.View
             holder.itemView.setActivated(isChecked);
     }
 
-    public void launchSelectionDataSync(String filter, boolean isAsync) {
-        launchSelectionDataSync(filter, isAsync, null);
-    }
 
-    public void launchSelectionDataSync(String filter, boolean isAsync,
-                                        BaseSelectionInfoProxy.SyncCompletedCallback callback
-    ) {
-        mSelectionInfoProxy.setFilter(filter, isAsync, callback);
+    public Observable<Boolean> launchSelectionDataSync(String filter) {
+        return mSelectionInfoProxy.setFilter(filter);
     }
 
     //region SelectableAdapter implementation

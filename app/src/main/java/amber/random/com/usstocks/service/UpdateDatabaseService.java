@@ -12,18 +12,11 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 import android.util.Log;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import javax.inject.Inject;
 
 import amber.random.com.usstocks.database.DataBaseHelper;
 import amber.random.com.usstocks.exceptions.UpdateFailed;
 import amber.random.com.usstocks.injection.App;
-import amber.random.com.usstocks.models.Indicator;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
@@ -65,7 +58,7 @@ public class UpdateDatabaseService extends Service {
         if (extra.equals(COMPANIES_LIST))
             getCompaniesList(token);
         else if (extra.equals(INDICATORS_LIST)) {
-            new GetIndicatorsList(token).start();
+            getIndicatorsList(token);
         } else {
             Log.d(getClass().getSimpleName(), "Unknown command");
         }
@@ -116,55 +109,30 @@ public class UpdateDatabaseService extends Service {
                 });
     }
 
-    public class GetIndicatorsList extends CommonGetRestData<Collection<Indicator>> {
-        public GetIndicatorsList(String token) {
-            super(RestServiceRequestHelper.getAllIndicators(token));
-        }
+    @Override
+    public boolean stopService(Intent name) {
+        return super.stopService(name);
+    }
 
-        @Override
-        public void run() {
-            ((App) getApplication()).getRequestComponent().inject(this);
-            super.run();
-            if (mError != null) {
-                sentIntent(COMPANIES_LIST, mError);
-                stopSelf();
-            }
-        }
-
-        @Override
-        protected void processData(Collection<Indicator> result) {
-            try {
-                mDataBaseHelper.addIndicators(result);
-                sentIntent(COMPANIES_LIST, null);
-            } catch (Exception ex) {
-                Log.e(getClass().getSimpleName(), "Can't updata indicators in database", ex);
-                sentIntent(COMPANIES_LIST, ex);
-            }
-            stopSelf();
-        }
-
-        private Integer tryParse(String string) {
-            try {
-                return Integer.valueOf(string);
-            } catch (NumberFormatException ex) {
-                return null;
-            }
-        }
-
-        @Override
-        protected Collection<Indicator> parseJsonTo(BufferedReader reader) throws IOException {
-            List<Indicator> indicators = new ArrayList<Indicator>();
-            String line = "";
-            while ((line = reader.readLine()) != null) {
-                List<String> names = new ArrayList<String>();
-                for (String item : line.split(",")) {
-                    Integer number = tryParse(item);
-                    if (number == null)
-                        names.add(item);
-                    else indicators.add(new Indicator(number, names));
-                }
-            }
-            return indicators;
-        }
+    private void getIndicatorsList(String token) {
+        ((App) getApplication()).getRequestComponent().inject(this);
+        mDisposable = mBackendService.getAllIndicators(token)
+                .subscribeOn(Schedulers.computation())
+                .observeOn(Schedulers.io())
+                .onErrorReturn(ex -> {
+                    sentIntent(INDICATORS_LIST, ex);
+                    return null;
+                })
+                .subscribe(indicators ->
+                {
+                    if (indicators != null) {
+                        mDataBaseHelper.addIndicators(indicators);
+                        sentIntent(INDICATORS_LIST, null);
+                        stopSelf();
+                    }
+                }, er -> {
+                    sentIntent(INDICATORS_LIST, er);
+                    stopSelf();
+                });
     }
 }

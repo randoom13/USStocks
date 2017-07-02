@@ -10,6 +10,7 @@ import java.util.Map;
 import javax.inject.Inject;
 
 import amber.random.com.usstocks.database.DataBaseHelper;
+import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
@@ -46,9 +47,9 @@ public abstract class BaseSelectionInfoProxy {
         this.mMode = mode;
     }
 
-    public void setFilter(String filter, boolean isAsync, SyncCompletedCallback callback) {
+    public Observable<Boolean> setFilter(String filter) {
         this.mFilter = filter;
-        launchDatabaseSync(isAsync, false, callback);
+        return launchDatabaseSync(false);
     }
 
     private void resetSync() {
@@ -73,7 +74,12 @@ public abstract class BaseSelectionInfoProxy {
                 mCheckedCache.remove(companyId);
         }
         if (!mSyncing && mCheckedCache.size() > mMaxCacheSize) {
-            launchDatabaseSync(true, false, null);
+            disposeDisposable();
+            mDisposable = launchDatabaseSync(false)
+                    .subscribeOn(Schedulers.computation())
+                    .subscribe(r -> {
+                    }, er -> {
+                    });
         }
     }
 
@@ -87,7 +93,12 @@ public abstract class BaseSelectionInfoProxy {
                         mCheckedCache.clear();
                         mCursor.moveToPosition(position);
                         mCheckedCache.put(mCursor.getInt(0), true);
-                        launchDatabaseSync(true, true, null);
+                        disposeDisposable();
+                        mDisposable = launchDatabaseSync(true)
+                                .subscribeOn(Schedulers.computation())
+                                .subscribe(r -> {
+                                }, er -> {
+                                });
                         return;
                     }
                 } else
@@ -137,9 +148,7 @@ public abstract class BaseSelectionInfoProxy {
     }
 
     public void closeResources() {
-        if (mDisposable != null && !mDisposable.isDisposed()) {
-            mDisposable.dispose();
-        }
+        disposeDisposable();
 
         if (mCursor != null)
             mCursor.close();
@@ -159,12 +168,11 @@ public abstract class BaseSelectionInfoProxy {
         }
     }
 
-    private void launchDatabaseSync(boolean isAsync, boolean resetSelection,
-                                    SyncCompletedCallback callback) {
+    private Observable<Boolean> launchDatabaseSync(boolean resetSelection) {
         mCancellationSignal.cancel();
         mCancellationSignal = new CancellationSignal();
         mSyncing = true;
-        launchDatabaseSync(isAsync, resetSelection, mCancellationSignal, callback);
+        return launchDatabaseSync(resetSelection, mCancellationSignal);
     }
 
     public boolean isSelected(int position) {
@@ -180,52 +188,41 @@ public abstract class BaseSelectionInfoProxy {
         }
     }
 
-    protected void launchDatabaseSync(boolean isAsync, boolean resetSelection,
-                                      CancellationSignal cancellation,
-                                      BaseSelectionInfoProxy.SyncCompletedCallback callback) {
-        if (mDisposable != null && !mDisposable.isDisposed()) {
-            mDisposable.dispose();
-        }
+    protected Observable<Boolean> launchDatabaseSync(boolean resetSelection,
+                                                     CancellationSignal cancellation) {
 
-        mDisposable = io.reactivex.Observable.empty()
-                .subscribeOn(isAsync ? Schedulers.computation() : Schedulers.trampoline())
-                .subscribe((ex) -> {
-                            String filter = mFilter;
-                            Map<Integer, Boolean> syncCheckedCache =
-                                    getSyncCheckedInfo(mDataBaseHelper, resetSelection,
-                                            mCheckedCache, cancellation);
+        return Observable.fromCallable(() -> {
+            String filter = mFilter;
+            Map<Integer, Boolean> syncCheckedCache =
+                    getSyncCheckedInfo(mDataBaseHelper, resetSelection,
+                            mCheckedCache, cancellation);
 
-                            Cursor cursor = mDataBaseHelper
-                                    .getCompaniesCheckedState(filter);
-                            if (cancellation.isCanceled() || !mFilter.equals(filter))
-                                return;
+            Cursor cursor = mDataBaseHelper.getCompaniesCheckedState(filter);
+            if (cancellation.isCanceled() || !mFilter.equals(filter))
+                return false;
 
-                            swapCursor(cursor, syncCheckedCache);
-                            onCompleted(true, callback);
-                        }, er -> {
-                            onCompleted(false, callback);
+            swapCursor(cursor, syncCheckedCache);
+            return true;
+        })
+                .onErrorReturn(er -> {
                             if (!cancellation.isCanceled())
                                 resetSync();
-                            else return;
 
-                            if (!isAsync && (er instanceof Exception)) {
-                                throw ((Exception) er);
-                            }
+                    throw (Exception) er;
                         }
                 );
     }
 
-    private void onCompleted(boolean isSuccessful, SyncCompletedCallback callback) {
-        if (callback != null)
-            callback.callBack(isSuccessful);
+
+    private void disposeDisposable() {
+        if (mDisposable != null && !mDisposable.isDisposed()) {
+            mDisposable.dispose();
+        }
     }
+
 
     protected abstract Map<Integer, Boolean> getSyncCheckedInfo(DataBaseHelper database,
                                                                 boolean resetSelection,
                                                                 Map<Integer, Boolean> checkedCache,
                                                                 CancellationSignal cancellation);
-
-    public interface SyncCompletedCallback {
-        void callBack(boolean isSuccessful);
-    }
 }

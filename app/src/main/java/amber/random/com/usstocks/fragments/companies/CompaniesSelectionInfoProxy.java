@@ -21,13 +21,13 @@ public class CompaniesSelectionInfoProxy extends BaseSelectionInfoProxy {
                                                        boolean resetSelection,
                                                        Map<Integer, Boolean> checkedCache,
                                                        CancellationSignal cancellation) {
-            Map<Integer, Boolean> syncCheckedCache = new HashMap<Integer, Boolean>();
+        Map<Integer, Boolean> syncCheckedCache = new HashMap<Integer, Boolean>();
         if (resetSelection)
-                database.unSelectCompanies(mFilter);
+            database.unSelectCompanies(mFilter);
 
-            database.checkCompaniesById(checkedCache);
-            syncCheckedCache = database.getCheckCompaniesById(checkedCache);
+        database.checkCompaniesById(checkedCache);
+        syncCheckedCache = database.getCheckCompaniesById(checkedCache);
         cancellation.throwIfCanceled();
-            return syncCheckedCache;
-        }
+        return syncCheckedCache;
+    }
 }

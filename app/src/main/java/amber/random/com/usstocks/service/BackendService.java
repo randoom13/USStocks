@@ -13,5 +13,5 @@ public interface BackendService {
     Flowable<List<Company>> getAllCompanies(@Query("token") String token);
 
     @GET("indicators/xbrl/meta")
-    Flowable<Indicator> getAllIndicators(@Query("token") String token);
+    Flowable<List<Indicator>> getAllIndicators(@Query("token") String token);
 }

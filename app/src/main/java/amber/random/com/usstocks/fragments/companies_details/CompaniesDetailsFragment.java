@@ -5,7 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import amber.random.com.usstocks.fragments.base.old.BaseContractListFragment;
+import amber.random.com.usstocks.fragments.base.BaseContractListFragment;
 
 
 public class CompaniesDetailsFragment extends BaseContractListFragment<CompaniesDetailsFragment.Contract> {

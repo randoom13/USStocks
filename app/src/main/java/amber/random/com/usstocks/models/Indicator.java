@@ -1,13 +1,19 @@
 package amber.random.com.usstocks.models;
 
+import com.google.auto.value.AutoValue;
+import com.google.gson.Gson;
+import com.google.gson.TypeAdapter;
+
 import java.util.List;
 
-public class Indicator {
-    public final int mId;
-    public final List<String> mNames;
-
-    public Indicator(int id, List<String> names) {
-        mId = id;
-        mNames = names;
+@AutoValue
+public abstract class Indicator {
+    public static TypeAdapter<Indicator> typeAdapter(Gson gson) {
+        return new AutoValue_Indicator.GsonTypeAdapter(gson);
     }
+
+    public abstract int mId();
+
+    public abstract List<String> mNames();
+
 }

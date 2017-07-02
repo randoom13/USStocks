@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBar;
@@ -32,20 +31,25 @@ import amber.random.com.usstocks.database.DataBaseHelper;
 import amber.random.com.usstocks.exceptions.UpdateFailed;
 import amber.random.com.usstocks.fragments.TokenDialogFragment;
 import amber.random.com.usstocks.fragments.base.BaseRecyclerFragment;
-import amber.random.com.usstocks.fragments.base.BaseSelectionInfoProxy;
 import amber.random.com.usstocks.fragments.base.SelectableAdapter;
 import amber.random.com.usstocks.injection.App;
 import amber.random.com.usstocks.service.UpdateDatabaseService;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 
 public class CompaniesFragment extends
         BaseRecyclerFragment<CompaniesFragment.Contract>
-        implements BaseSelectionInfoProxy.SyncCompletedCallback, TokenDialogFragment.TokenDialogListener {
+        implements TokenDialogFragment.TokenDialogListener {
     private final static String sSTATE_QUERY = "jk";
+    @Inject
+    protected DataBaseHelper mDataBaseHelper;
     private EditText mFilter;
     private ProgressBar mProgress;
     private CompaniesCursorAdapter mAdapter;
-    private Handler mainHandler;
+    private Disposable mSelectionSyncDisp = null;
+    private Disposable mLoadCompDisp;
     private BroadcastReceiver mOnUpdateCompleted = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -55,7 +59,7 @@ public class CompaniesFragment extends
 
             UpdateFailed updateFailed = (UpdateFailed) intent.getSerializableExtra(UpdateDatabaseService.EXTRA_DATA_ERROR);
             if (updateFailed == null) {
-                new LoadCompaniesList().start();
+                loadCompaniesList(false);
                 return;
             }
 
@@ -71,6 +75,11 @@ public class CompaniesFragment extends
         }
     };
 
+
+    public CompaniesFragment() {
+        //   ((App) getActivity().getApplication()).getRequestComponent().inject(this);
+    }
+
     @Override
     public void onClick(boolean isClose) {
         if (isClose)
@@ -84,7 +93,6 @@ public class CompaniesFragment extends
         else
             mContract.showTokenDialog(getString(R.string.invalid_token), this);
     }
-
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
@@ -116,7 +124,6 @@ public class CompaniesFragment extends
         updateMultiSelectTitle();
     }
 
-
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
@@ -138,19 +145,24 @@ public class CompaniesFragment extends
         return super.onOptionsItemSelected(item);
     }
 
-    private void showDetails() {
-        mAdapter.launchSelectionDataSync(mFilter.getText().toString(), true, this);
+    private void disposeSelectionSync() {
+        if (mSelectionSyncDisp != null && !mSelectionSyncDisp.isDisposed()) {
+            mSelectionSyncDisp.dispose();
+        }
     }
 
-    @Override
-    public void callBack(boolean isSuccessful) {
-        if (isSuccessful)
-            mainHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    mContract.showDetails(mFilter.getText().toString());
-                }
-            });
+    private void showDetails() {
+        disposeSelectionSync();
+        mSelectionSyncDisp = mAdapter.launchSelectionDataSync(mFilter.getText().toString())
+                .subscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread())
+                .onErrorReturn((er) -> false)
+                .subscribe(res -> {
+                    if (Boolean.TRUE.equals(res))
+                        mContract.showDetails(mFilter.getText().toString());
+                });
+
+
     }
 
     private void resetMultiSelect() {
@@ -159,6 +171,7 @@ public class CompaniesFragment extends
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        ((App) getActivity().getApplication()).getRequestComponent().inject(this);
         setHasOptionsMenu(true);
         View view = inflater.inflate(R.layout.companies_fragment_v2, container, false);
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recycler);
@@ -172,7 +185,7 @@ public class CompaniesFragment extends
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                new LoadCompaniesList().start();
+                loadCompaniesList(false);
             }
 
             @Override
@@ -181,7 +194,6 @@ public class CompaniesFragment extends
             }
         });
 
-        mainHandler = new Handler(getActivity().getMainLooper());
         mAdapter = new CompaniesCursorAdapter(this);
         mAdapter.onRestoreInstanceState(savedInstanceState);
         mAdapter.addSelectionChangedListener(
@@ -197,7 +209,7 @@ public class CompaniesFragment extends
         );
         setAdapter(mAdapter);
         if (savedInstanceState == null)
-            new LoadCompaniesList(true).start();
+            loadCompaniesList(true);
         else mFilter.setText(savedInstanceState.getCharSequence(sSTATE_QUERY));
         updateMultiSelectTitle();
 
@@ -220,9 +232,11 @@ public class CompaniesFragment extends
     }
 
     @Override
-    public void onDetach() {
-        super.onDetach();
+    public void onDestroy() {
         mAdapter.closeResources();
+        disposeloadCompaniesListDisp();
+        disposeSelectionSync();
+        super.onDestroy();
     }
 
     private void launchService() {
@@ -230,6 +244,73 @@ public class CompaniesFragment extends
         intent.putExtra(UpdateDatabaseService.EXTRA_DATA_UPDATE, UpdateDatabaseService.COMPANIES_LIST);
         intent.putExtra(UpdateDatabaseService.EXTRA_TOKEN, mContract.getTokenKey());
         getActivity().startService(intent);
+    }
+
+
+    private void failedLoadCompanies() {
+        mProgress.setVisibility(View.GONE);
+        Snackbar snackbar = Snackbar.make(getRecyclerView(),
+                "Failed to load companies", Snackbar.LENGTH_LONG);
+        snackbar.show();
+    }
+
+    private void disposeloadCompaniesListDisp() {
+        if (mLoadCompDisp != null && !mLoadCompDisp.isDisposed()) {
+            mLoadCompDisp.dispose();
+        }
+    }
+
+    private void loadCompaniesList(boolean forceUpdateDatabase) {
+        disposeloadCompaniesListDisp();
+        mLoadCompDisp = io.reactivex.Observable.fromCallable(() ->
+        {
+            Log.d(" loadCompaniesList_1", Thread.currentThread().getName());
+            String filter = mFilter.getText().toString();
+            LoadCompaniesResult result = new LoadCompaniesResult();
+            final Integer maxId = mDataBaseHelper.getMaxId(filter);
+            final Cursor cursor = mDataBaseHelper.getCompanies(filter);
+            if (cursor == null) {
+                Log.e(this.getClass().getSimpleName(), "Can't load companies");
+                result.isResult = false;
+                return result;
+            }
+            // Anyway, operation cursor.getCount() executes on main thread
+            // when cursor move to any position and this first launch "eats" resources
+            // To avoid slowing the main thread execute this operation on background
+            if (cursor.moveToFirst() || !forceUpdateDatabase) {
+                disposeSelectionSync();
+                mSelectionSyncDisp = mAdapter.launchSelectionDataSync(filter).subscribe();
+                result.cursor = cursor;
+                result.maxId = maxId;
+                return result;
+            } else {
+                result.isResult = true;
+                return result;
+            }
+        })
+                .subscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(res -> {
+                    Log.d(" loadCompaniesList_2", Thread.currentThread().getName());
+                    if (Boolean.TRUE.equals(res.isResult)) {
+                        mProgress.setVisibility(View.VISIBLE);
+                        launchService();
+                        return;
+                    }
+
+                    if (Boolean.FALSE.equals(res.isResult)) {
+                        failedLoadCompanies();
+                        return;
+                    }
+
+                    mProgress.setVisibility(View.GONE);
+                    mAdapter.updateCursor(res.cursor, res.maxId.toString());
+                    updateMultiSelectTitle();
+                }, er -> {
+                    Log.d(" loadCompaniesList_3", Thread.currentThread().getName());
+                    Log.e(this.getClass().getSimpleName(), "Can't load companies", er);
+                    failedLoadCompanies();
+                });
     }
 
     public interface Contract {
@@ -242,70 +323,11 @@ public class CompaniesFragment extends
         boolean hasToken();
     }
 
-    public class LoadCompaniesList extends Thread {
-        @Inject
-        protected DataBaseHelper mDataBaseHelper;
-        private boolean mForceUpdateDatabase;
-
-        public LoadCompaniesList() {
-            this(false);
-        }
-
-        public LoadCompaniesList(boolean forceUpdateDatabase) {
-            mForceUpdateDatabase = forceUpdateDatabase;
-        }
-
-        private void onFailed() {
-            mainHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    mProgress.setVisibility(View.GONE);
-                    Snackbar snackbar = Snackbar.make(getRecyclerView(),
-                            "Failed to load companies", Snackbar.LENGTH_LONG);
-                    snackbar.show();
-                }
-            });
-        }
-
-
-        @Override
-        public void run() {
-            try {
-                String filter = mFilter.getText().toString();
-                ((App) getActivity().getApplication()).getRequestComponent().inject(this);
-                final Integer maxId = mDataBaseHelper.getMaxId(filter);
-                final Cursor cursor = mDataBaseHelper.getCompanies(filter);
-                if (cursor == null) {
-                    Log.e(CompaniesFragment.this.getClass().getSimpleName(), "Can't load companies");
-                    onFailed();
-                }
-                // Anyway, operation cursor.getCount() executes on main thread
-                // when cursor move to any position and this first launch "eats" resources
-                // To avoid slowing the main thread execute this operation on background
-                if (cursor.moveToFirst() || !mForceUpdateDatabase) {
-                    mAdapter.launchSelectionDataSync(filter, false);
-                    mainHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            mProgress.setVisibility(View.GONE);
-                            mAdapter.updateCursor(cursor, maxId.toString());
-                            updateMultiSelectTitle();
-                        }
-                    });
-                } else {
-                    mainHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            mProgress.setVisibility(View.VISIBLE);
-                            launchService();
-                        }
-                    });
-                }
-            } catch (Exception ex) {
-                Log.e(CompaniesFragment.this.getClass().getSimpleName(), "Can't load companies", ex);
-                onFailed();
-            }
-        }
+    private class LoadCompaniesResult {
+        Cursor cursor;
+        Integer maxId;
+        Boolean isResult;
     }
+
 }
 

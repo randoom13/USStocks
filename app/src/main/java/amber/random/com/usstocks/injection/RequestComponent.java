@@ -16,9 +16,7 @@ import dagger.Component;
 public interface RequestComponent {
     void inject(UpdateDatabaseService service);
 
-    void inject(UpdateDatabaseService.GetIndicatorsList getIndicatorsList);
-
-    void inject(CompaniesFragment.LoadCompaniesList loadCompaniesList);
+    void inject(CompaniesFragment companiesFragment);
 
     void inject(CompaniesSelectionInfoProxy syncWithDataBaseRunnable);
 
