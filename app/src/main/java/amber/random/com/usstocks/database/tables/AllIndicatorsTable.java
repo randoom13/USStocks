@@ -2,14 +2,12 @@ package amber.random.com.usstocks.database.tables;
 
 public class AllIndicatorsTable {
     public final String mID = "indicator_id";
-    public final String mINDICATOR_NAME = "indicator_name";
     public final String mName = "all_indicators";
-    ;
+    public final String mTOTAL = "indicator_total";
     public final String mCreateScript;
 
     public AllIndicatorsTable() {
-        mCreateScript = String.format("CREATE VIRTUAL TABLE IF NOT EXISTS %s USING fts3("
-                + "%s INTEGER NOT NULL PRIMARY KEY UNIQUE," +
-                "%s TEXT NOT NULL)", mName, mID, mINDICATOR_NAME);
+        mCreateScript = String.format("CREATE TABLE IF NOT EXISTS %s("
+                + "%s TEXT NOT NULL PRIMARY KEY, %s INTEGER NOT NULL)", mName, mID, mTOTAL);
     }
 }

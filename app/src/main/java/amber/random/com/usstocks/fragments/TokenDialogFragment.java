@@ -4,7 +4,6 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
@@ -12,16 +11,26 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import javax.inject.Inject;
+
 import amber.random.com.usstocks.R;
+import amber.random.com.usstocks.injection.App;
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 public class TokenDialogFragment extends DialogFragment
         implements DialogInterface.OnClickListener {
     private static final String TOKEN = "token";
     private static final String DESC = "desc";
+    @Inject
+    protected SharedPreferences mSharedPreferences;
     private TextView mTokenDesc;
     private EditText mToken;
     private String mTokenKey;
     private TokenDialogListener mListener;
+    private Disposable mSaveTokenDisposable;
 
     public static TokenDialogFragment newInstance(String tokenKey, String desc) {
         TokenDialogFragment fragment = new TokenDialogFragment();
@@ -34,12 +43,13 @@ public class TokenDialogFragment extends DialogFragment
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
         saveNewToken();
+        super.onSaveInstanceState(outState);
     }
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
+        ((App) getActivity().getApplication()).getRequestComponent().inject(this);
         View form = getActivity().getLayoutInflater().inflate(R.layout.token_dialog, null);
         mToken = (EditText) form.findViewById(R.id.token);
         mTokenDesc = (TextView) form.findViewById(R.id.token_desc);
@@ -47,9 +57,7 @@ public class TokenDialogFragment extends DialogFragment
             if (TextUtils.isEmpty(mTokenKey))
                 mTokenKey = getArguments().getString(TOKEN);
             if (!TextUtils.isEmpty(mTokenKey)) {
-                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences
-                        (getActivity().getApplicationContext());
-                String token = prefs.getString(mTokenKey, "");
+                String token = mSharedPreferences.getString(mTokenKey, "");
                 mToken.setText(token);
             }
             mTokenDesc.setText(getArguments().getString(DESC));
@@ -67,35 +75,48 @@ public class TokenDialogFragment extends DialogFragment
 
     @Override
     public void onClick(DialogInterface dialog, int which) {
-        saveNewToken();
-        onListener(false);
+        disposeSaveTokenDisposable();
+        mSaveTokenDisposable = Observable.fromCallable(() -> saveNewToken())
+                .subscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(r ->
+                {
+                    onListener(false);
+                    mListener = null;
+                });
     }
 
     @Override
     public void onDismiss(DialogInterface dialog) {
         super.onDismiss(dialog);
         onListener(true);
+        mListener = null;
     }
+
 
     @Override
     public void onDestroyView() {
-        if (mListener != null)
-            mListener = null;
-
         super.onDestroyView();
+        disposeSaveTokenDisposable();
     }
 
-    private void saveNewToken() {
+    private Boolean saveNewToken() {
         if (!TextUtils.isEmpty(mTokenKey)) {
-            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences
-                    (getActivity().getApplicationContext());
-            prefs.edit().putString(mTokenKey, mToken.getText().toString()).commit();
+            mSharedPreferences.edit().putString(mTokenKey, mToken.getText().toString()).commit();
+            return true;
         }
+        return false;
     }
 
     private void onListener(boolean isClose) {
-        if (mListener != null)
+        if (mListener != null) {
             mListener.onClick(isClose);
+        }
+    }
+
+    private void disposeSaveTokenDisposable() {
+        if (mSaveTokenDisposable != null && !mSaveTokenDisposable.isDisposed())
+            mSaveTokenDisposable.dispose();
     }
 
     public interface TokenDialogListener {

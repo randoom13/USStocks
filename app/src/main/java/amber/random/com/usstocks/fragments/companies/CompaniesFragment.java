@@ -27,13 +27,13 @@ import android.widget.ProgressBar;
 import javax.inject.Inject;
 
 import amber.random.com.usstocks.R;
-import amber.random.com.usstocks.database.DataBaseHelper;
+import amber.random.com.usstocks.database.DataBaseHelperProxy;
 import amber.random.com.usstocks.exceptions.UpdateFailed;
 import amber.random.com.usstocks.fragments.TokenDialogFragment;
 import amber.random.com.usstocks.fragments.base.BaseRecyclerFragment;
-import amber.random.com.usstocks.fragments.base.SelectableAdapter;
 import amber.random.com.usstocks.injection.App;
 import amber.random.com.usstocks.service.UpdateDatabaseService;
+import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
@@ -42,14 +42,15 @@ import io.reactivex.schedulers.Schedulers;
 public class CompaniesFragment extends
         BaseRecyclerFragment<CompaniesFragment.Contract>
         implements TokenDialogFragment.TokenDialogListener {
+
     private final static String sSTATE_QUERY = "jk";
     @Inject
-    protected DataBaseHelper mDataBaseHelper;
+    protected DataBaseHelperProxy mDataBaseHelper;
     private EditText mFilter;
     private ProgressBar mProgress;
     private CompaniesCursorAdapter mAdapter;
-    private Disposable mSelectionSyncDisp = null;
-    private Disposable mLoadCompDisp;
+    private Disposable mDisposable;
+    private Disposable mTokenDisposable;
     private BroadcastReceiver mOnUpdateCompleted = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -75,23 +76,35 @@ public class CompaniesFragment extends
         }
     };
 
+    private void disposeDisposable() {
+        if (mDisposable != null && !mDisposable.isDisposed())
+            mDisposable.dispose();
+    }
 
-    public CompaniesFragment() {
-        //   ((App) getActivity().getApplication()).getRequestComponent().inject(this);
+    private void disposeTokenDisposable() {
+        if (mDisposable != null && !mDisposable.isDisposed())
+            mDisposable.dispose();
     }
 
     @Override
     public void onClick(boolean isClose) {
         if (isClose)
             getActivity().finish();
+
         verifyLiveToken();
     }
 
     private void verifyLiveToken() {
-        if (mContract.hasToken())
-            launchService();
-        else
-            mContract.showTokenDialog(getString(R.string.invalid_token), this);
+        disposeTokenDisposable();
+        mTokenDisposable = mContract.hasToken().subscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(res -> {
+                    if (res) {
+                        mProgress.setVisibility(View.VISIBLE);
+                        launchService();
+                    } else
+                        mContract.showTokenDialog(getString(R.string.invalid_token), this);
+                });
     }
 
     @Override
@@ -145,21 +158,17 @@ public class CompaniesFragment extends
         return super.onOptionsItemSelected(item);
     }
 
-    private void disposeSelectionSync() {
-        if (mSelectionSyncDisp != null && !mSelectionSyncDisp.isDisposed()) {
-            mSelectionSyncDisp.dispose();
-        }
-    }
 
     private void showDetails() {
-        disposeSelectionSync();
-        mSelectionSyncDisp = mAdapter.launchSelectionDataSync(mFilter.getText().toString())
+        disposeDisposable();
+        String filter = mFilter.getText().toString();
+        mDisposable = mAdapter.launchSelectionDataSync(filter)
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .onErrorReturn((er) -> false)
+                .onErrorReturn((ex) -> false)
                 .subscribe(res -> {
                     if (Boolean.TRUE.equals(res))
-                        mContract.showDetails(mFilter.getText().toString());
+                        mContract.showDetails(filter);
                 });
 
 
@@ -196,14 +205,10 @@ public class CompaniesFragment extends
 
         mAdapter = new CompaniesCursorAdapter(this);
         mAdapter.onRestoreInstanceState(savedInstanceState);
-        mAdapter.addSelectionChangedListener(
-                new SelectableAdapter.listener() {
-                    @Override
-                    public void callback() {
-                        updateMultiSelectTitle();
-                        if (!mAdapter.isMultiSelectMode()) {
-                            showDetails();
-                        }
+        mAdapter.addSelectionChangedListener(() -> {
+            updateMultiSelectTitle();
+            if (!mAdapter.isMultiSelectMode()) {
+                showDetails();
                     }
                 }
         );
@@ -211,6 +216,7 @@ public class CompaniesFragment extends
         if (savedInstanceState == null)
             loadCompaniesList(true);
         else mFilter.setText(savedInstanceState.getCharSequence(sSTATE_QUERY));
+
         updateMultiSelectTitle();
 
         return view;
@@ -233,9 +239,9 @@ public class CompaniesFragment extends
 
     @Override
     public void onDestroy() {
+        disposeDisposable();
+        disposeTokenDisposable();
         mAdapter.closeResources();
-        disposeloadCompaniesListDisp();
-        disposeSelectionSync();
         super.onDestroy();
     }
 
@@ -254,21 +260,16 @@ public class CompaniesFragment extends
         snackbar.show();
     }
 
-    private void disposeloadCompaniesListDisp() {
-        if (mLoadCompDisp != null && !mLoadCompDisp.isDisposed()) {
-            mLoadCompDisp.dispose();
-        }
-    }
 
     private void loadCompaniesList(boolean forceUpdateDatabase) {
-        disposeloadCompaniesListDisp();
-        mLoadCompDisp = io.reactivex.Observable.fromCallable(() ->
+        disposeDisposable();
+        mDisposable = Observable.fromCallable(() ->
         {
             Log.d(" loadCompaniesList_1", Thread.currentThread().getName());
             String filter = mFilter.getText().toString();
+            Integer maxId = mDataBaseHelper.getMaxId(filter);
+            Cursor cursor = mDataBaseHelper.getCompanies(filter);
             LoadCompaniesResult result = new LoadCompaniesResult();
-            final Integer maxId = mDataBaseHelper.getMaxId(filter);
-            final Cursor cursor = mDataBaseHelper.getCompanies(filter);
             if (cursor == null) {
                 Log.e(this.getClass().getSimpleName(), "Can't load companies");
                 result.isResult = false;
@@ -278,8 +279,7 @@ public class CompaniesFragment extends
             // when cursor move to any position and this first launch "eats" resources
             // To avoid slowing the main thread execute this operation on background
             if (cursor.moveToFirst() || !forceUpdateDatabase) {
-                disposeSelectionSync();
-                mSelectionSyncDisp = mAdapter.launchSelectionDataSync(filter).subscribe();
+                mAdapter.launchSelectionDataSync(filter).blockingSubscribe();
                 result.cursor = cursor;
                 result.maxId = maxId;
                 return result;
@@ -299,6 +299,7 @@ public class CompaniesFragment extends
                     }
 
                     if (Boolean.FALSE.equals(res.isResult)) {
+                        mProgress.setVisibility(View.GONE);
                         failedLoadCompanies();
                         return;
                     }
@@ -309,18 +310,20 @@ public class CompaniesFragment extends
                 }, er -> {
                     Log.d(" loadCompaniesList_3", Thread.currentThread().getName());
                     Log.e(this.getClass().getSimpleName(), "Can't load companies", er);
+                    mProgress.setVisibility(View.GONE);
                     failedLoadCompanies();
                 });
     }
 
     public interface Contract {
+
         void showDetails(String filter);
 
         void showTokenDialog(String desc, TokenDialogFragment.TokenDialogListener listener);
 
         String getTokenKey();
 
-        boolean hasToken();
+        Observable<Boolean> hasToken();
     }
 
     private class LoadCompaniesResult {

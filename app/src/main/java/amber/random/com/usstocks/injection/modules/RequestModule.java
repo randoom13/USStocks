@@ -5,6 +5,7 @@ import android.app.Application;
 import javax.inject.Singleton;
 
 import amber.random.com.usstocks.database.DataBaseHelper;
+import amber.random.com.usstocks.database.DataBaseHelperProxy;
 import dagger.Module;
 import dagger.Provides;
 
@@ -14,6 +15,12 @@ public class RequestModule {
     @Provides
     @Singleton
     DataBaseHelper DataBaseHelper(Application application) {
+        return new DataBaseHelper(application);
+    }
+
+    @Provides
+    @Singleton
+    DataBaseHelperProxy getDataBaseHelper(Application application) {
         return new DataBaseHelper(application);
     }
 }

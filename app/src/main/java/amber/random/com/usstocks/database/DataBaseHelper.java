@@ -16,12 +16,14 @@ import java.util.List;
 import java.util.Map;
 
 import amber.random.com.usstocks.database.tables.AllIndicatorsTable;
+import amber.random.com.usstocks.database.tables.CommonIndicatorsDataTable;
 import amber.random.com.usstocks.database.tables.CompaniesTable;
 import amber.random.com.usstocks.database.tables.SelectedCompaniesTable;
 import amber.random.com.usstocks.models.Company;
 import amber.random.com.usstocks.models.Indicator;
+import amber.random.com.usstocks.models.IndicatorInfo;
 
-public class DataBaseHelper extends SQLiteOpenHelper {
+public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperProxy {
     //region company table columns
     public static final String sCOMPANY_ID = "company_id";
     public static final String sCOMPANY_NAME = "comany_name";
@@ -30,10 +32,10 @@ public class DataBaseHelper extends SQLiteOpenHelper {
 
     private static final int SCHEMA = 1;
     private static final String DATABASE_NAME = "us_stocks";
-    private static DataBaseHelper sINSTANCE;
     private CompaniesTable mCompaniesTable = new CompaniesTable();
     private AllIndicatorsTable mAllIndicatorsTable = new AllIndicatorsTable();
     private SelectedCompaniesTable mSelectedCompaniesTable = new SelectedCompaniesTable();
+    private CommonIndicatorsDataTable mIndicatorsDataTable = new CommonIndicatorsDataTable();
 
     public DataBaseHelper(Context context) {
         super(context, DATABASE_NAME, null, SCHEMA);
@@ -78,6 +80,7 @@ public class DataBaseHelper extends SQLiteOpenHelper {
             db.execSQL(mCompaniesTable.mCreateScript);
             db.execSQL(mAllIndicatorsTable.mCreateScript);
             db.execSQL(mSelectedCompaniesTable.mCreateScript);
+            db.execSQL(mIndicatorsDataTable.mCreateScript);
             db.setTransactionSuccessful();
             Log.e(this.getClass().getSimpleName(), "All tables in database was created successfully");
         } catch (SQLException ex) {
@@ -86,14 +89,6 @@ public class DataBaseHelper extends SQLiteOpenHelper {
             db.endTransaction();
         }
     }
-
-/*    public Cursor getSelectedCompaniesNames(){
-        SQLiteDatabase database = getReadableDatabase();
-        Cursor cursor = database.query(mCompaniesTable.mName, new String[]{mCompaniesTable.mName},
-                mCompaniesTable.mIsSelected + " = 1", null, null, null , null);
-        cursor.moveToFirst();
-        return cursor;
-    }*/
 
     public Cursor getSelectedCompanies(String filter) {
         SQLiteDatabase database = getReadableDatabase();
@@ -218,10 +213,19 @@ public class DataBaseHelper extends SQLiteOpenHelper {
         database.beginTransaction();
         try {
             for (Indicator indicator : companies) {
-                ContentValues values = new ContentValues();
-                values.put(mAllIndicatorsTable.mName, toParse(indicator.mNames()));
-                values.put(mAllIndicatorsTable.mID, indicator.mId());
+                ContentValues values;
+                values = new ContentValues();
+                values.put(mAllIndicatorsTable.mTOTAL, indicator.mTotal);
+                values.put(mAllIndicatorsTable.mID, indicator.mId);
                 database.replaceOrThrow(mAllIndicatorsTable.mName, null, values);
+
+                for (IndicatorInfo info : indicator.mInfos) {
+                    values = new ContentValues();
+                    values.put(mIndicatorsDataTable.mINDICATOR_VALUE, info.mValue);
+                    values.put(mIndicatorsDataTable.mINDICATOR_YEAR, info.mYear);
+                    values.put(mIndicatorsDataTable.mID, indicator.mId);
+                    database.replaceOrThrow(mIndicatorsDataTable.mName, null, values);
+                }
             }
             database.setTransactionSuccessful();
         } finally {

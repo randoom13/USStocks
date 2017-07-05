@@ -1,4 +1,4 @@
-package amber.random.com.usstocks.service;
+package amber.random.com.usstocks.models;
 
 import com.google.gson.TypeAdapterFactory;
 import com.ryanharter.auto.value.gson.GsonTypeAdapterFactory;

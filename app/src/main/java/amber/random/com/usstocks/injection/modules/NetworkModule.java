@@ -7,8 +7,9 @@ import com.jakewharton.retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import javax.inject.Singleton;
 
 import amber.random.com.usstocks.BuildConfig;
-import amber.random.com.usstocks.service.AutoValueGsonFactory;
-import amber.random.com.usstocks.service.BackendService;
+import amber.random.com.usstocks.models.AutoValueGsonFactory;
+import amber.random.com.usstocks.service.rest.BackendServiceProxy;
+import amber.random.com.usstocks.service.rest.BackendServiceProxyImp;
 import dagger.Module;
 import dagger.Provides;
 import retrofit2.Retrofit;
@@ -41,8 +42,7 @@ public class NetworkModule {
 
     @Provides
     @Singleton
-    BackendService getBackendService(Retrofit retrofit) {
-        BackendService backendService = retrofit.create(BackendService.class);
-        return backendService;
+    BackendServiceProxy getBackendService() {
+        return new BackendServiceProxyImp();
     }
 }
