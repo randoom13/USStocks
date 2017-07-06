@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
+import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -65,8 +66,13 @@ public class TokenDialogFragment extends DialogFragment
 
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         return builder.setTitle(R.string.token_dialog_title).setView(form)
-                .setPositiveButton(android.R.string.ok, this).
-                        create();
+                .setPositiveButton(android.R.string.ok, this)
+                .setOnKeyListener((dialog, keyCode, event) -> {
+                    if (keyCode == KeyEvent.KEYCODE_BACK)
+                        onListener(true);
+                    return true;
+                })
+                .create();
     }
 
     public void addClickListener(TokenDialogListener listener) {
@@ -76,21 +82,10 @@ public class TokenDialogFragment extends DialogFragment
     @Override
     public void onClick(DialogInterface dialog, int which) {
         disposeSaveTokenDisposable();
-        mSaveTokenDisposable = Observable.fromCallable(() -> saveNewToken())
+        mSaveTokenDisposable = Observable.fromCallable(this::saveNewToken)
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(r ->
-                {
-                    onListener(false);
-                    mListener = null;
-                });
-    }
-
-    @Override
-    public void onDismiss(DialogInterface dialog) {
-        super.onDismiss(dialog);
-        onListener(true);
-        mListener = null;
+                .subscribe(r -> onListener(false));
     }
 
 

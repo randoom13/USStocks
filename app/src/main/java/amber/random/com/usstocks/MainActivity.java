@@ -30,7 +30,6 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
     private CompaniesFragment mCompaniesFragment = null;
     private CompaniesDetailsFragment mCompaniesDetailsFragment = null;
     private Disposable mDisposable;
-    private TokenDialogFragment dialogFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,8 +61,7 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
 
     private void verifyLiveToken() {
         disposeDisposable();
-        mDisposable =
-                hasToken().observeOn(AndroidSchedulers.mainThread())
+        mDisposable = hasToken().observeOn(AndroidSchedulers.mainThread())
                         .subscribeOn(Schedulers.computation())
                         .subscribe(res ->
                         {
@@ -113,10 +111,8 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
 
     @Override
     public void showTokenDialog(String desc, TokenDialogFragment.TokenDialogListener listener) {
-        if (dialogFragment != null)
-            getSupportFragmentManager().beginTransaction().remove(dialogFragment).commit();
-
-        dialogFragment = TokenDialogFragment.newInstance(TOKEN_KEY, desc);
+        TokenDialogFragment dialogFragment = TokenDialogFragment.newInstance(TOKEN_KEY, desc);
+        dialogFragment.setCancelable(false);
         if (listener != null)
             dialogFragment.addClickListener(listener);
         dialogFragment.show(getSupportFragmentManager(), TOKEN_TAG);
