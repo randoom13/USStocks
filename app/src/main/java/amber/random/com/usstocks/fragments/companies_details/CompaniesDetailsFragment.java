@@ -54,7 +54,7 @@ public class CompaniesDetailsFragment extends Fragment {
         pager.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
         TabLayout tabLayout = (TabLayout) view.findViewById(R.id.tabs);
         mDisposable = Observable.fromCallable(() -> {
-            ((App) getActivity().getApplication()).getRequestComponent().inject(this);
+            App.getRequestComponent().inject(this);
             String filter = "";
             if (getArguments() != null)
                 filter = getArguments().getString(FILTER);

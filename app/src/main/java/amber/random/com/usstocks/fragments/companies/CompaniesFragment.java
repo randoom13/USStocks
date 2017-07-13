@@ -180,7 +180,7 @@ public class CompaniesFragment extends
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        ((App) getActivity().getApplication()).getRequestComponent().inject(this);
+        App.getRequestComponent().inject(this);
         setHasOptionsMenu(true);
         View view = inflater.inflate(R.layout.companies_fragment_v2, container, false);
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recycler);

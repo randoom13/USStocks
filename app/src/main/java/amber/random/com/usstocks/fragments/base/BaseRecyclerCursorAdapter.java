@@ -3,16 +3,16 @@ package amber.random.com.usstocks.fragments.base;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v7.widget.RecyclerView;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
+import java.lang.ref.WeakReference;
 
 import io.reactivex.Observable;
 
 public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.ViewHolder>
         extends RecyclerView.Adapter<Holder> implements SelectableAdapter {
-    protected final LayoutInflater mInflater;
-    private final BaseRecyclerFragment mRecyclerFragment;
+    protected final WeakReference<BaseRecyclerFragment> mRecyclerFragmentWR;
     protected BaseSelectionInfoProxy mSelectionInfoProxy;
     protected Cursor mDataCursor;
     private listener mSelectionChangedListener;
@@ -20,8 +20,8 @@ public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.View
     private int mMinVisibleIndex = Integer.MAX_VALUE;
 
     public BaseRecyclerCursorAdapter(BaseRecyclerFragment recyclerFragment) {
-        mInflater = LayoutInflater.from(recyclerFragment.getActivity());
-        mRecyclerFragment = recyclerFragment;
+        mRecyclerFragmentWR = new WeakReference<BaseRecyclerFragment>(recyclerFragment);
+
     }
 
     public abstract Holder onCreateViewHolder(ViewGroup viewGroup, int i);
@@ -80,13 +80,15 @@ public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.View
     @Override
     public void closeMultiSelectMode() {
         mSelectionInfoProxy.setMode(BaseSelectionInfoProxy.CHOICE_MODE_SINGLE);
-        mRecyclerFragment.getActivity().invalidateOptionsMenu();
+        if (mRecyclerFragmentWR.isEnqueued())
+            mRecyclerFragmentWR.get().getActivity().invalidateOptionsMenu();
     }
 
     @Override
     public boolean isLongClick(int position) {
         mSelectionInfoProxy.setMode(BaseSelectionInfoProxy.CHOICE_MODE_MULTIPLE);
-        mRecyclerFragment.getActivity().invalidateOptionsMenu();
+        if (mRecyclerFragmentWR.isEnqueued())
+            mRecyclerFragmentWR.get().getActivity().invalidateOptionsMenu();
         setSelected(position, true);
         return true;
     }
@@ -102,7 +104,9 @@ public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.View
 
     private void updateVisibleItemsSelection() {
         for (int index = mMinVisibleIndex; index <= mMaxVisibleIndex; index++) {
-            View view = mRecyclerFragment.getRecyclerView().getChildAt(index);
+            View view = null;
+            if (mRecyclerFragmentWR.isEnqueued())
+                view = mRecyclerFragmentWR.get().getRecyclerView().getChildAt(index);
             if (view != null) {
                 boolean isChecked = mSelectionInfoProxy.isSelected(index);
                 if (view.isActivated() != isChecked)

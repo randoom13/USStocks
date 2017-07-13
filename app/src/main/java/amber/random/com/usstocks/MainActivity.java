@@ -36,7 +36,7 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         setupStrictMode();
-        ((App) getApplication()).getRequestComponent().inject(this);
+        App.getRequestComponent().inject(this);
         mCompaniesFragment = (CompaniesFragment) getSupportFragmentManager()
                 .findFragmentByTag(COMPANIES_TAG);
         mCompaniesDetailsFragment = (CompaniesDetailsFragment) getSupportFragmentManager()

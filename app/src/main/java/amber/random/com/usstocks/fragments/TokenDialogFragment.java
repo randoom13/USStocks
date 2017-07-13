@@ -50,7 +50,7 @@ public class TokenDialogFragment extends DialogFragment
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        ((App) getActivity().getApplication()).getRequestComponent().inject(this);
+        App.getRequestComponent().inject(this);
         View form = getActivity().getLayoutInflater().inflate(R.layout.token_dialog, null);
         mToken = (EditText) form.findViewById(R.id.token);
         mTokenDesc = (TextView) form.findViewById(R.id.token_desc);

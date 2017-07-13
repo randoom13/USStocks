@@ -1,6 +1,7 @@
 package amber.random.com.usstocks.fragments.companies;
 
 import android.database.Cursor;
+import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
 import amber.random.com.usstocks.R;
@@ -13,12 +14,15 @@ public class CompaniesCursorAdapter extends BaseRecyclerCursorAdapter<CompanyHol
     public CompaniesCursorAdapter(BaseRecyclerFragment activity) {
         super(activity);
         // https://www.neotechsoftware.com/blog/android-intent-size-limit
-        mSelectionInfoProxy = new CompaniesSelectionInfoProxy(500, activity.getActivity());
+        mSelectionInfoProxy = new CompaniesSelectionInfoProxy(500);
     }
 
     @Override
     public CompanyHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
-        return new CompanyHolder(mInflater.inflate(R.layout.company_row, viewGroup, false), this);
+        if (!mRecyclerFragmentWR.isEnqueued())
+            return null;
+        LayoutInflater inflater = LayoutInflater.from(mRecyclerFragmentWR.get().getActivity());
+        return new CompanyHolder(inflater.inflate(R.layout.company_row, viewGroup, false), this);
     }
 
     @Override

@@ -1,12 +1,12 @@
 package amber.random.com.usstocks.fragments.companies;
 
-import android.annotation.TargetApi;
 import android.database.Cursor;
 import android.os.Build;
 import android.support.v7.widget.RecyclerView;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
+
+import java.lang.ref.WeakReference;
 
 import amber.random.com.usstocks.R;
 import amber.random.com.usstocks.database.DataBaseHelper;
@@ -17,22 +17,18 @@ public class CompanyHolder extends RecyclerView.ViewHolder implements View.OnCli
         View.OnLongClickListener {
     public final TextView mCompanyId;
     public final TextView mCompanyName;
-    private final SelectableAdapter mAdapter;
+    private final WeakReference<SelectableAdapter> mAdapterWR;
 
     public CompanyHolder(View view, SelectableAdapter adapter) {
         super(view);
-        mAdapter = adapter;
+        mAdapterWR = new WeakReference<SelectableAdapter>(adapter);
         mCompanyId = (TextView) view.findViewById(R.id.companyId);
         mCompanyName = (TextView) view.findViewById(R.id.companyName);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            view.setOnTouchListener(new View.OnTouchListener() {
-                @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-                @Override
-                public boolean onTouch(View v, MotionEvent event) {
-                    v.findViewById(R.id.row_content).
-                            getBackground().setHotspot(event.getX(), event.getY());
-                    return false;
-                }
+            view.setOnTouchListener((v, event) -> {
+                v.findViewById(R.id.row_content).
+                        getBackground().setHotspot(event.getX(), event.getY());
+                return false;
             });
         }
 
@@ -44,7 +40,7 @@ public class CompanyHolder extends RecyclerView.ViewHolder implements View.OnCli
 
     @Override
     public boolean onLongClick(View v) {
-        boolean result = mAdapter.isLongClick(getAdapterPosition());
+        boolean result = mAdapterWR.isEnqueued() && mAdapterWR.get().isLongClick(getAdapterPosition());
         if (result)
             itemView.setActivated(true);
         return result;
@@ -53,7 +49,8 @@ public class CompanyHolder extends RecyclerView.ViewHolder implements View.OnCli
     @Override
     public void onClick(View v) {
         boolean isChecked = !itemView.isActivated();
-        mAdapter.setSelected(getAdapterPosition(), isChecked);
+        if (mAdapterWR.isEnqueued())
+            mAdapterWR.get().setSelected(getAdapterPosition(), isChecked);
         itemView.setActivated(isChecked);
     }
 

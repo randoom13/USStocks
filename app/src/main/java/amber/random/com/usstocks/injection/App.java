@@ -7,9 +7,9 @@ import amber.random.com.usstocks.injection.modules.NetworkModule;
 import amber.random.com.usstocks.injection.modules.RequestModule;
 
 public class App extends Application {
-    private RequestComponent mRequestComponent;
+    private static RequestComponent mRequestComponent;
 
-    public RequestComponent getRequestComponent() {
+    public static RequestComponent getRequestComponent() {
         return mRequestComponent;
     }
 

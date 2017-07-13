@@ -51,7 +51,7 @@ public class UpdateDatabaseService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        ((App) getApplication()).getRequestComponent().inject(this);
+        App.getRequestComponent().inject(this);
         String commandName = intent.getStringExtra(EXTRA_DATA_UPDATE);
         if (TextUtils.isEmpty(commandName))
             return START_NOT_STICKY;
