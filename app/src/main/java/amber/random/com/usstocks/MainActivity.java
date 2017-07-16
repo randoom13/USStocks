@@ -58,6 +58,11 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
             mDisposable.dispose();
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        disposeDisposable();
+        super.onSaveInstanceState(outState);
+    }
 
     private void verifyLiveToken() {
         disposeDisposable();
@@ -65,6 +70,9 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
                         .subscribeOn(Schedulers.computation())
                         .subscribe(res ->
                         {
+                            if (mDisposable.isDisposed())
+                                return;
+
                             if (res)
                                 initializeFragments();
                             else

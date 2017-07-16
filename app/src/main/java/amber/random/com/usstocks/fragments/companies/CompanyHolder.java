@@ -1,8 +1,10 @@
 package amber.random.com.usstocks.fragments.companies;
 
+import android.annotation.TargetApi;
 import android.database.Cursor;
 import android.os.Build;
 import android.support.v7.widget.RecyclerView;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.TextView;
 
@@ -25,10 +27,13 @@ public class CompanyHolder extends RecyclerView.ViewHolder implements View.OnCli
         mCompanyId = (TextView) view.findViewById(R.id.companyId);
         mCompanyName = (TextView) view.findViewById(R.id.companyName);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            view.setOnTouchListener((v, event) -> {
-                v.findViewById(R.id.row_content).
-                        getBackground().setHotspot(event.getX(), event.getY());
-                return false;
+            view.setOnTouchListener(new View.OnTouchListener() {
+                @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+                @Override
+                public boolean onTouch(View v, MotionEvent event) {
+                    v.getBackground().setHotspot(event.getX(), event.getY());
+                    return false;
+                }
             });
         }
 

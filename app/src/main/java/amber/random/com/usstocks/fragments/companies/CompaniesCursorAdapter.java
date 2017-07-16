@@ -19,7 +19,7 @@ public class CompaniesCursorAdapter extends BaseRecyclerCursorAdapter<CompanyHol
 
     @Override
     public CompanyHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
-        if (!mRecyclerFragmentWR.isEnqueued())
+        if (mRecyclerFragmentWR.isEnqueued())
             return null;
         LayoutInflater inflater = LayoutInflater.from(mRecyclerFragmentWR.get().getActivity());
         return new CompanyHolder(inflater.inflate(R.layout.company_row, viewGroup, false), this);

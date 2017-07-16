@@ -80,14 +80,14 @@ public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.View
     @Override
     public void closeMultiSelectMode() {
         mSelectionInfoProxy.setMode(BaseSelectionInfoProxy.CHOICE_MODE_SINGLE);
-        if (mRecyclerFragmentWR.isEnqueued())
+        if (!mRecyclerFragmentWR.isEnqueued())
             mRecyclerFragmentWR.get().getActivity().invalidateOptionsMenu();
     }
 
     @Override
     public boolean isLongClick(int position) {
         mSelectionInfoProxy.setMode(BaseSelectionInfoProxy.CHOICE_MODE_MULTIPLE);
-        if (mRecyclerFragmentWR.isEnqueued())
+        if (!mRecyclerFragmentWR.isEnqueued())
             mRecyclerFragmentWR.get().getActivity().invalidateOptionsMenu();
         setSelected(position, true);
         return true;
@@ -105,7 +105,7 @@ public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.View
     private void updateVisibleItemsSelection() {
         for (int index = mMinVisibleIndex; index <= mMaxVisibleIndex; index++) {
             View view = null;
-            if (mRecyclerFragmentWR.isEnqueued())
+            if (!mRecyclerFragmentWR.isEnqueued())
                 view = mRecyclerFragmentWR.get().getRecyclerView().getChildAt(index);
             if (view != null) {
                 boolean isChecked = mSelectionInfoProxy.isSelected(index);
