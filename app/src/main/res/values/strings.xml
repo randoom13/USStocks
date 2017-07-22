@@ -12,4 +12,7 @@
     <string name="token_dialog_title">Access token</string>
     <string name="token_dialog_desc">To get access to the fundamental stock data it require authentication token, which you can get on <a href="https://account.usfundamentals.com/signup">https://account.usfundamentals.com/signup</a></string>
     <string name="invalid_token">The provided auth token is not valid. Check it on your <a href="https://account.usfundamentals.com">https://account.usfundamentals.com</a>.</string>
+    <string name="no_connection">No Internet connection</string>
+    <string name="failed_update_companies">Failed to update companies!</string>
+    <string name="failed_load_companies">Failed to load companies!</string>
 </resources>

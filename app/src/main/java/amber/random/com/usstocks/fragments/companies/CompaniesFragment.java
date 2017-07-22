@@ -28,6 +28,7 @@ import javax.inject.Inject;
 
 import amber.random.com.usstocks.R;
 import amber.random.com.usstocks.database.DataBaseHelperProxy;
+import amber.random.com.usstocks.exceptions.NoConnectionException;
 import amber.random.com.usstocks.exceptions.UpdateFailed;
 import amber.random.com.usstocks.fragments.TokenDialogFragment;
 import amber.random.com.usstocks.fragments.base.BaseRecyclerFragment;
@@ -43,14 +44,13 @@ public class CompaniesFragment extends
         BaseRecyclerFragment<CompaniesFragment.Contract>
         implements TokenDialogFragment.TokenDialogListener {
 
-    private final static String sSTATE_QUERY = "jk";
+    private final static String sStateQuery = "jk";
     @Inject
     protected DataBaseHelperProxy mDataBaseHelper;
     private EditText mFilter;
     private ProgressBar mProgress;
     private CompaniesCursorAdapter mAdapter;
     private Disposable mDisposable;
-    private Disposable mTokenDisposable;
     private BroadcastReceiver mOnUpdateCompleted = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -66,15 +66,17 @@ public class CompaniesFragment extends
 
             mProgress.setVisibility(View.GONE);
             if (updateFailed.invalidToken()) {
-                mProgress.setVisibility(View.VISIBLE);
-                mContract.showTokenDialog(getString(R.string.invalid_token), CompaniesFragment.this);
+                mContract.showTokenDialog(R.string.invalid_token, CompaniesFragment.this, true);
                 return;
             }
 
-            Snackbar snackbar = Snackbar.make(getRecyclerView(), "Failed to update companies!", Snackbar.LENGTH_LONG);
+            int textResourceId = updateFailed.innerException instanceof NoConnectionException ?
+                    R.string.no_connection : R.string.failed_update_companies;
+            Snackbar snackbar = Snackbar.make(getRecyclerView(), textResourceId, Snackbar.LENGTH_LONG);
             snackbar.show();
         }
     };
+
 
     private void disposeDisposable() {
         if (mDisposable != null && !mDisposable.isDisposed())
@@ -96,21 +98,22 @@ public class CompaniesFragment extends
 
     private void verifyLiveToken() {
         disposeTokenDisposable();
-        mTokenDisposable = mContract.hasToken().subscribeOn(Schedulers.computation())
+        mDisposable = mContract.hasToken().subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(res -> {
-                    if (res) {
-                        mProgress.setVisibility(View.VISIBLE);
-                        launchService();
-                    } else
-                        mContract.showTokenDialog(getString(R.string.invalid_token), this);
+                    if (!mDisposable.isDisposed())
+                        if (res) {
+                            mProgress.setVisibility(View.VISIBLE);
+                            launchService();
+                        } else
+                            mContract.showTokenDialog(R.string.invalid_token, this, true);
                 });
     }
 
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
-        outState.putCharSequence(sSTATE_QUERY, mFilter.getText());
+        outState.putCharSequence(sStateQuery, mFilter.getText());
         mAdapter.onSaveInstanceState(outState);
     }
 
@@ -215,7 +218,7 @@ public class CompaniesFragment extends
         setAdapter(mAdapter);
         if (savedInstanceState == null)
             loadCompaniesList(true);
-        else mFilter.setText(savedInstanceState.getCharSequence(sSTATE_QUERY));
+        else mFilter.setText(savedInstanceState.getCharSequence(sStateQuery));
 
         updateMultiSelectTitle();
 
@@ -255,8 +258,7 @@ public class CompaniesFragment extends
 
     private void failedLoadCompanies() {
         mProgress.setVisibility(View.GONE);
-        Snackbar snackbar = Snackbar.make(getRecyclerView(),
-                "Failed to load companies", Snackbar.LENGTH_LONG);
+        Snackbar snackbar = Snackbar.make(getRecyclerView(), R.string.failed_load_companies, Snackbar.LENGTH_LONG);
         snackbar.show();
     }
 
@@ -265,16 +267,10 @@ public class CompaniesFragment extends
         disposeDisposable();
         mDisposable = Observable.fromCallable(() ->
         {
-            Log.d(" loadCompaniesList_1", Thread.currentThread().getName());
             String filter = mFilter.getText().toString();
             Integer maxId = mDataBaseHelper.getMaxId(filter);
             Cursor cursor = mDataBaseHelper.getCompanies(filter);
             LoadCompaniesResult result = new LoadCompaniesResult();
-            if (cursor == null) {
-                Log.e(this.getClass().getSimpleName(), "Can't load companies");
-                result.isResult = false;
-                return result;
-            }
             // Anyway, operation cursor.getCount() executes on main thread
             // when cursor move to any position and this first launch "eats" resources
             // To avoid slowing the main thread execute this operation on background
@@ -282,6 +278,7 @@ public class CompaniesFragment extends
                 mAdapter.launchSelectionDataSync(filter).blockingSubscribe();
                 result.cursor = cursor;
                 result.maxId = maxId;
+                result.isResult = false;
                 return result;
             } else {
                 result.isResult = true;
@@ -291,16 +288,9 @@ public class CompaniesFragment extends
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(res -> {
-                    Log.d(" loadCompaniesList_2", Thread.currentThread().getName());
                     if (Boolean.TRUE.equals(res.isResult)) {
                         mProgress.setVisibility(View.VISIBLE);
                         launchService();
-                        return;
-                    }
-
-                    if (Boolean.FALSE.equals(res.isResult)) {
-                        mProgress.setVisibility(View.GONE);
-                        failedLoadCompanies();
                         return;
                     }
 
@@ -308,7 +298,6 @@ public class CompaniesFragment extends
                     mAdapter.updateCursor(res.cursor, res.maxId.toString());
                     updateMultiSelectTitle();
                 }, er -> {
-                    Log.d(" loadCompaniesList_3", Thread.currentThread().getName());
                     Log.e(this.getClass().getSimpleName(), "Can't load companies", er);
                     mProgress.setVisibility(View.GONE);
                     failedLoadCompanies();
@@ -319,7 +308,7 @@ public class CompaniesFragment extends
 
         void showDetails(String filter);
 
-        void showTokenDialog(String desc, TokenDialogFragment.TokenDialogListener listener);
+        void showTokenDialog(int descResId, TokenDialogFragment.TokenDialogListener listener, boolean cancelable);
 
         String getTokenKey();
 

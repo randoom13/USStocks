@@ -25,7 +25,7 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 public class CompaniesDetailsFragment extends Fragment {
-    public static final String FILTER = "filter";
+    private static final String sFILTER = "filter";
     @Inject
     protected DataBaseHelper mDataBaseHelper;
     private Disposable mDisposable;
@@ -33,7 +33,7 @@ public class CompaniesDetailsFragment extends Fragment {
     public static CompaniesDetailsFragment newInstance(String filter) {
         CompaniesDetailsFragment fragment = new CompaniesDetailsFragment();
         Bundle bundle = new Bundle();
-        bundle.putString(FILTER, filter);
+        bundle.putString(sFILTER, filter);
         fragment.setArguments(bundle);
         return fragment;
     }
@@ -53,11 +53,11 @@ public class CompaniesDetailsFragment extends Fragment {
         RecyclerViewPager pager = (RecyclerViewPager) view.findViewById(R.id.pager);
         pager.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
         TabLayout tabLayout = (TabLayout) view.findViewById(R.id.tabs);
+        App.getRequestComponent().inject(this);
         mDisposable = Observable.fromCallable(() -> {
-            App.getRequestComponent().inject(this);
             String filter = "";
             if (getArguments() != null)
-                filter = getArguments().getString(FILTER);
+                filter = getArguments().getString(sFILTER);
             final Cursor cursor = mDataBaseHelper.getSelectedCompanies(filter);
             cursor.moveToFirst();
             return cursor;
@@ -71,7 +71,7 @@ public class CompaniesDetailsFragment extends Fragment {
                 .subscribe(c -> {
                     if (c != null) {
                         pager.setAdapter(new PageAdapter(getActivity().getLayoutInflater(), c));
-                        TabLayoutSupport.setupWithViewPager(tabLayout, pager, new TabAdapter(getActivity(), c));
+                        TabLayoutSupport.setupWithViewPager(tabLayout, pager, new TabAdapter(c));
                     }
                 });
         return view;

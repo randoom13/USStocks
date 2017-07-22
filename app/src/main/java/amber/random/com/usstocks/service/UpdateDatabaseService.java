@@ -1,16 +1,23 @@
 package amber.random.com.usstocks.service;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.SQLException;
+import android.net.ConnectivityManager;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.jakewharton.retrofit2.adapter.rxjava2.HttpException;
+
 import javax.inject.Inject;
 
 import amber.random.com.usstocks.database.DataBaseHelperProxy;
+import amber.random.com.usstocks.exceptions.NoConnectionException;
+import amber.random.com.usstocks.exceptions.UnknownFormat;
 import amber.random.com.usstocks.exceptions.UpdateFailed;
 import amber.random.com.usstocks.injection.App;
 import amber.random.com.usstocks.service.rest.BackendServiceProxy;
@@ -53,16 +60,23 @@ public class UpdateDatabaseService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         App.getRequestComponent().inject(this);
         String commandName = intent.getStringExtra(EXTRA_DATA_UPDATE);
-        if (TextUtils.isEmpty(commandName))
-            return START_NOT_STICKY;
 
-        if (commandName.equals(COMPANIES_LIST))
-            getCompaniesList(getToken(intent), startId);
-        else if (commandName.equals(INDICATORS_LIST)) {
-            getIndicatorsList(getToken(intent), startId);
-        } else {
+        if (COMPANIES_LIST.equals(commandName)) {
+            if (!isNetworkAvailable()) {
+                sentIntent(COMPANIES_LIST, new UpdateFailed(new NoConnectionException()));
+                stopSelf(startId);
+            } else
+                getCompaniesList(getToken(intent), startId);
+
+        } else if (INDICATORS_LIST.equals(commandName)) {
+            if (!isNetworkAvailable()) {
+                sentIntent(INDICATORS_LIST, new UpdateFailed(new NoConnectionException()));
+                stopSelf(startId);
+            } else
+                getIndicatorsList(getToken(intent), startId);
+        } else if (!TextUtils.isEmpty(commandName))
             Log.d(getClass().getSimpleName(), "Unknown command: " + commandName);
-        }
+
 
         return START_NOT_STICKY;
     }
@@ -73,12 +87,17 @@ public class UpdateDatabaseService extends Service {
         return null;
     }
 
-    private void sentIntent(String operationName, Throwable exception) {
+    private void sentIntent(String operationName, Exception exception) {
         Intent intent = new Intent(UPDATE_COMPLETED);
         intent.putExtra(EXTRA_DATA_UPDATE, operationName);
         if (exception != null)
-            intent.putExtra(EXTRA_DATA_ERROR, new UpdateFailed(exception));
+            intent.putExtra(EXTRA_DATA_ERROR, exception);
         LocalBroadcastManager.getInstance(UpdateDatabaseService.this).sendBroadcast(intent);
+    }
+
+    private boolean isNetworkAvailable() {
+        final ConnectivityManager connectivityManager = ((ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE));
+        return connectivityManager.getActiveNetworkInfo() != null && connectivityManager.getActiveNetworkInfo().isConnected();
     }
 
     private void getCompaniesList(String token, int startId) {
@@ -86,8 +105,8 @@ public class UpdateDatabaseService extends Service {
                 .subscribeOn(Schedulers.computation())
                 .observeOn(Schedulers.io())
                 .onErrorReturn(ex -> {
-                    Log.d(getClass().getSimpleName(), "Can't get companies list", ex);
-                    sentIntent(COMPANIES_LIST, ex);
+                    handleException(COMPANIES_LIST, ex, false);
+                    Log.e(getClass().getSimpleName(), "Can't get companies list", ex);
                     return null;
                 })
                 .subscribe(companies ->
@@ -97,11 +116,9 @@ public class UpdateDatabaseService extends Service {
                         sentIntent(COMPANIES_LIST, null);
                     }
                 }, ex -> {
-                    Log.d(getClass().getSimpleName(), "Can't save companies list in database", ex);
-                    sentIntent(COMPANIES_LIST, ex);
-                }, () -> {
-                    stopSelf(startId);
-                });
+                    Log.e(getClass().getSimpleName(), "Can't save companies list in database", ex);
+                    handleException(COMPANIES_LIST, ex, true);
+                }, () -> stopSelf(startId));
     }
 
     @Override
@@ -112,13 +129,27 @@ public class UpdateDatabaseService extends Service {
         super.onDestroy();
     }
 
+    private void handleException(String operationName, Throwable ex, boolean afterSubscribePart) {
+        if (ex instanceof HttpException)
+            sentIntent(operationName, new UpdateFailed((HttpException) ex));
+        else if (ex instanceof SQLException)
+            sentIntent(operationName, new UpdateFailed((SQLException) ex));
+        else if (ex instanceof UnknownFormat)
+            sentIntent(operationName, new UpdateFailed((UnknownFormat) ex));
+        else {
+            String message = String.format("Unhandled exception during %s %d saving in database", operationName,
+                    afterSubscribePart ? "after" : "before");
+            Log.e(getClass().getSimpleName(), message, ex);
+        }
+    }
+
     private void getIndicatorsList(String token, int startId) {
         mDisposable = mBackendService.getAllIndicators(token)
                 .subscribeOn(Schedulers.computation())
                 .observeOn(Schedulers.io())
                 .onErrorReturn(ex -> {
-                    Log.d(getClass().getSimpleName(), "Can't get indicators list", ex);
-                    sentIntent(INDICATORS_LIST, ex);
+                    Log.e(getClass().getSimpleName(), "Can't get indicators list", ex);
+                    handleException(INDICATORS_LIST, ex, false);
                     return null;
                 })
                 .subscribe(indicators ->
@@ -128,10 +159,8 @@ public class UpdateDatabaseService extends Service {
                         sentIntent(INDICATORS_LIST, null);
                     }
                 }, ex -> {
-                    Log.d(getClass().getSimpleName(), "Can't save indicators list in database", ex);
-                    sentIntent(INDICATORS_LIST, ex);
-                }, () -> {
-                    stopSelf(startId);
-                });
+                    Log.e(getClass().getSimpleName(), "Can't save indicators list in database", ex);
+                    handleException(INDICATORS_LIST, ex, true);
+                }, () -> stopSelf(startId));
     }
 }

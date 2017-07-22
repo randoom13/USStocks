@@ -36,7 +36,6 @@ public class BaseContractListFragment<T> extends ListFragment {
     @Override
     public void onDetach() {
         mContract = null;
-
         super.onDetach();
     }
 

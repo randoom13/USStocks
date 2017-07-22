@@ -17,15 +17,15 @@ import amber.random.com.usstocks.fragments.base.SelectableAdapter;
 
 public class CompanyHolder extends RecyclerView.ViewHolder implements View.OnClickListener,
         View.OnLongClickListener {
-    public final TextView mCompanyId;
-    public final TextView mCompanyName;
+    public final TextView companyId;
+    public final TextView companyName;
     private final WeakReference<SelectableAdapter> mAdapterWR;
 
     public CompanyHolder(View view, SelectableAdapter adapter) {
         super(view);
         mAdapterWR = new WeakReference<SelectableAdapter>(adapter);
-        mCompanyId = (TextView) view.findViewById(R.id.companyId);
-        mCompanyName = (TextView) view.findViewById(R.id.companyName);
+        companyId = (TextView) view.findViewById(R.id.companyId);
+        companyName = (TextView) view.findViewById(R.id.companyName);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             view.setOnTouchListener(new View.OnTouchListener() {
                 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -45,7 +45,8 @@ public class CompanyHolder extends RecyclerView.ViewHolder implements View.OnCli
 
     @Override
     public boolean onLongClick(View v) {
-        boolean result = mAdapterWR.isEnqueued() && mAdapterWR.get().isLongClick(getAdapterPosition());
+        SelectableAdapter adapter = mAdapterWR.get();
+        boolean result = null != adapter && adapter.isLongClick(getAdapterPosition());
         if (result)
             itemView.setActivated(true);
         return result;
@@ -54,17 +55,18 @@ public class CompanyHolder extends RecyclerView.ViewHolder implements View.OnCli
     @Override
     public void onClick(View v) {
         boolean isChecked = !itemView.isActivated();
-        if (mAdapterWR.isEnqueued())
-            mAdapterWR.get().setSelected(getAdapterPosition(), isChecked);
+        SelectableAdapter adapter = mAdapterWR.get();
+        if (null != adapter)
+            adapter.setSelected(getAdapterPosition(), isChecked);
         itemView.setActivated(isChecked);
     }
 
     void bindModel(Cursor cursor, String maxIdFormat) {
-        String id = cursor.getString(cursor.getColumnIndex(DataBaseHelper.sCOMPANY_ID));
-        mCompanyId.setText(id);
-        float maxWidth = mCompanyId.getPaint().measureText(maxIdFormat);
-        mCompanyId.setWidth((int) maxWidth);
-        String name = cursor.getString(cursor.getColumnIndex(DataBaseHelper.sCOMPANY_NAME));
-        mCompanyName.setText(name);
+        String id = cursor.getString(cursor.getColumnIndex(DataBaseHelper.sCompanyId));
+        companyId.setText(id);
+        float maxWidth = companyId.getPaint().measureText(maxIdFormat);
+        companyId.setWidth((int) maxWidth);
+        String name = cursor.getString(cursor.getColumnIndex(DataBaseHelper.sCompanyName));
+        companyName.setText(name);
     }
 }

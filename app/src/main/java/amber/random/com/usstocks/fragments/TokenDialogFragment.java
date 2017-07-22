@@ -4,11 +4,14 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -23,21 +26,20 @@ import io.reactivex.schedulers.Schedulers;
 
 public class TokenDialogFragment extends DialogFragment
         implements DialogInterface.OnClickListener {
-    private static final String TOKEN = "token";
-    private static final String DESC = "desc";
+    private static final String sToken = "token";
+    private static final String sDescResId = "desc";
     @Inject
     protected SharedPreferences mSharedPreferences;
-    private TextView mTokenDesc;
     private EditText mToken;
     private String mTokenKey;
     private TokenDialogListener mListener;
     private Disposable mSaveTokenDisposable;
 
-    public static TokenDialogFragment newInstance(String tokenKey, String desc) {
+    public static TokenDialogFragment newInstance(String tokenKey, int descResId) {
         TokenDialogFragment fragment = new TokenDialogFragment();
         Bundle bundle = new Bundle();
-        bundle.putString(TOKEN, tokenKey);
-        bundle.putString(DESC, desc);
+        bundle.putString(sToken, tokenKey);
+        bundle.putInt(sDescResId, descResId);
         fragment.setArguments(bundle);
         return fragment;
     }
@@ -48,24 +50,36 @@ public class TokenDialogFragment extends DialogFragment
         super.onSaveInstanceState(outState);
     }
 
+    @Nullable
     @Override
-    public Dialog onCreateDialog(Bundle savedInstanceState) {
-        App.getRequestComponent().inject(this);
-        View form = getActivity().getLayoutInflater().inflate(R.layout.token_dialog, null);
-        mToken = (EditText) form.findViewById(R.id.token);
-        mTokenDesc = (TextView) form.findViewById(R.id.token_desc);
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View form = inflater.inflate(R.layout.token_dialog, container);
+        return form;
+    }
+
+    private void initializeView(View view) {
+        mToken = (EditText) view.findViewById(R.id.token);
+        TextView TokenDesc = (TextView) view.findViewById(R.id.token_desc);
         if (getArguments() != null) {
             if (TextUtils.isEmpty(mTokenKey))
-                mTokenKey = getArguments().getString(TOKEN);
+                mTokenKey = getArguments().getString(sToken);
             if (!TextUtils.isEmpty(mTokenKey)) {
                 String token = mSharedPreferences.getString(mTokenKey, "");
                 mToken.setText(token);
             }
-            mTokenDesc.setText(getArguments().getString(DESC));
+            Integer resId = getArguments().getInt(sDescResId);
+            if (null != resId)
+                TokenDesc.setText(getText(resId));
         }
+    }
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        return builder.setTitle(R.string.token_dialog_title).setView(form)
+    @Override
+    public Dialog onCreateDialog(Bundle savedInstanceState) {
+        App.getRequestComponent().inject(this);
+        View view = getView();
+        initializeView(view);
+        return new AlertDialog.Builder(getActivity()).
+                setTitle(R.string.token_dialog_title).setView(view)
                 .setPositiveButton(android.R.string.ok, this)
                 .setOnKeyListener((dialog, keyCode, event) -> {
                     if (keyCode == KeyEvent.KEYCODE_BACK)
@@ -92,6 +106,7 @@ public class TokenDialogFragment extends DialogFragment
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        mListener = null;
         disposeSaveTokenDisposable();
     }
 

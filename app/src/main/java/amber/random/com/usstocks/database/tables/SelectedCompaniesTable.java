@@ -2,12 +2,12 @@ package amber.random.com.usstocks.database.tables;
 
 
 public class SelectedCompaniesTable {
-    public final String mID = "id";
-    public final String mName = "selected_companies";
-    public final String mCreateScript;
+    public final String id = "id";
+    public final String name = "selected_companies";
+    public final String createScript;
 
     public SelectedCompaniesTable() {
-        mCreateScript = String.format("CREATE TABLE %s("
-                + "%s INTEGER NOT NULL PRIMARY KEY UNIQUE)", mName, mID);
+        createScript = String.format("CREATE TABLE %s("
+                + "%s INTEGER NOT NULL PRIMARY KEY UNIQUE)", name, id);
     }
 }

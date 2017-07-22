@@ -53,31 +53,10 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
         verifyLiveToken();
     }
 
-    private void disposeDisposable() {
-        if (mDisposable != null && !mDisposable.isDisposed())
-            mDisposable.dispose();
-    }
-
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         disposeDisposable();
         super.onSaveInstanceState(outState);
-    }
-
-    private void verifyLiveToken() {
-        disposeDisposable();
-        mDisposable = hasToken().observeOn(AndroidSchedulers.mainThread())
-                        .subscribeOn(Schedulers.computation())
-                        .subscribe(res ->
-                        {
-                            if (mDisposable.isDisposed())
-                                return;
-
-                            if (res)
-                                initializeFragments();
-                            else
-                                showTokenDialog(getString(R.string.token_dialog_desc), this);
-                        });
     }
 
     private void initializeFragments() {
@@ -118,9 +97,9 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
 
 
     @Override
-    public void showTokenDialog(String desc, TokenDialogFragment.TokenDialogListener listener) {
-        TokenDialogFragment dialogFragment = TokenDialogFragment.newInstance(TOKEN_KEY, desc);
-        dialogFragment.setCancelable(false);
+    public void showTokenDialog(int descResId, TokenDialogFragment.TokenDialogListener listener, boolean cancelable) {
+        TokenDialogFragment dialogFragment = TokenDialogFragment.newInstance(TOKEN_KEY, descResId);
+        dialogFragment.setCancelable(cancelable);
         if (listener != null)
             dialogFragment.addClickListener(listener);
         dialogFragment.show(getSupportFragmentManager(), TOKEN_TAG);
@@ -137,4 +116,26 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
         }
         StrictMode.setThreadPolicy(builder.build());
     }
+
+    private void disposeDisposable() {
+        if (mDisposable != null && !mDisposable.isDisposed())
+            mDisposable.dispose();
+    }
+
+    private void verifyLiveToken() {
+        disposeDisposable();
+        mDisposable = hasToken().observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.computation())
+                .subscribe(res ->
+                {
+                    if (mDisposable.isDisposed())
+                        return;
+
+                    if (res)
+                        initializeFragments();
+                    else
+                        showTokenDialog(R.string.token_dialog_desc, this, false);
+                });
+    }
+
 }

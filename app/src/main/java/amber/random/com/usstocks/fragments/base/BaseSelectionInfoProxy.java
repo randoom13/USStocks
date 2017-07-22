@@ -17,8 +17,8 @@ import io.reactivex.schedulers.Schedulers;
 public abstract class BaseSelectionInfoProxy {
     public static final int CHOICE_MODE_MULTIPLE = 4;
     public static final int CHOICE_MODE_SINGLE = 8;
-    private static final String SELECTIONS_INFO = "selectionsinfo";
-    private static final String SELECTION_MODE_INFO = "selection_mode_info";
+    private static final String sSelectionsInfo = "selectionsinfo";
+    private static final String sSelectionModeInfo = "selection_mode_info";
     private final int mMaxCacheSize;
     private final Object mlock = new Object();
     protected String mFilter = "";
@@ -115,14 +115,14 @@ public abstract class BaseSelectionInfoProxy {
     }
 
     public void onSaveInstanceState(Bundle state) {
-        state.putParcelable(SELECTIONS_INFO, getSelectionsInfo());
-        state.putInt(SELECTION_MODE_INFO, mMode);
+        state.putParcelable(sSelectionsInfo, getSelectionsInfo());
+        state.putInt(sSelectionModeInfo, mMode);
     }
 
     public void onRestoreInstanceState(Bundle state) {
         if (state != null) {
-            mCheckedCache = state.getParcelable(SELECTIONS_INFO);
-            mMode = state.getInt(SELECTION_MODE_INFO, CHOICE_MODE_SINGLE);
+            mCheckedCache = state.getParcelable(sSelectionsInfo);
+            mMode = state.getInt(sSelectionModeInfo, CHOICE_MODE_SINGLE);
         }
         if (mCheckedCache == null)
             mCheckedCache = new ParcelableSelectedCache();

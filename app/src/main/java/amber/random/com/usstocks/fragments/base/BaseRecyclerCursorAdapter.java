@@ -16,12 +16,12 @@ public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.View
     protected BaseSelectionInfoProxy mSelectionInfoProxy;
     protected Cursor mDataCursor;
     private listener mSelectionChangedListener;
-    private int mMaxVisibleIndex = Integer.MIN_VALUE;
-    private int mMinVisibleIndex = Integer.MAX_VALUE;
+    private int mMaxVisibleIndex;
+    private int mMinVisibleIndex;
 
     public BaseRecyclerCursorAdapter(BaseRecyclerFragment recyclerFragment) {
         mRecyclerFragmentWR = new WeakReference<BaseRecyclerFragment>(recyclerFragment);
-
+        invalidateVisibleIndices();
     }
 
     public abstract Holder onCreateViewHolder(ViewGroup viewGroup, int i);
@@ -80,14 +80,16 @@ public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.View
     @Override
     public void closeMultiSelectMode() {
         mSelectionInfoProxy.setMode(BaseSelectionInfoProxy.CHOICE_MODE_SINGLE);
-        if (!mRecyclerFragmentWR.isEnqueued())
-            mRecyclerFragmentWR.get().getActivity().invalidateOptionsMenu();
+        BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
+        if (null != fragment)
+            fragment.getActivity().invalidateOptionsMenu();
     }
 
     @Override
     public boolean isLongClick(int position) {
         mSelectionInfoProxy.setMode(BaseSelectionInfoProxy.CHOICE_MODE_MULTIPLE);
-        if (!mRecyclerFragmentWR.isEnqueued())
+        BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
+        if (null != fragment)
             mRecyclerFragmentWR.get().getActivity().invalidateOptionsMenu();
         setSelected(position, true);
         return true;
@@ -102,11 +104,16 @@ public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.View
             mSelectionChangedListener.callback();
     }
 
+    private void invalidateVisibleIndices() {
+        mMaxVisibleIndex = Integer.MIN_VALUE;
+        mMinVisibleIndex = Integer.MAX_VALUE;
+    }
     private void updateVisibleItemsSelection() {
         for (int index = mMinVisibleIndex; index <= mMaxVisibleIndex; index++) {
             View view = null;
-            if (!mRecyclerFragmentWR.isEnqueued())
-                view = mRecyclerFragmentWR.get().getRecyclerView().getChildAt(index);
+            BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
+            if (null != fragment)
+                view = fragment.getRecyclerView().getChildAt(index);
             if (view != null) {
                 boolean isChecked = mSelectionInfoProxy.isSelected(index);
                 if (view.isActivated() != isChecked)
@@ -145,8 +152,7 @@ public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.View
     public void updateCursor(Cursor dataCursor) {
         Cursor oldCursor = mDataCursor;
         mDataCursor = dataCursor;
-        mMaxVisibleIndex = Integer.MIN_VALUE;
-        mMinVisibleIndex = Integer.MAX_VALUE;
+        invalidateVisibleIndices();
         this.notifyDataSetChanged();
         if (oldCursor != null)
             oldCursor.close();

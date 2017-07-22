@@ -21,7 +21,7 @@ import retrofit2.http.GET;
 import retrofit2.http.Query;
 
 public class BackendServiceProxyImp implements BackendServiceProxy {
-    private static final String RegexEndLine = "([ \\t\\r]*\\n[ \\t\\r]*)+";
+    private static final String sREGEX_END_LINE = "([ \\t\\r]*\\n[ \\t\\r]*)+";
     private JsonBackendService mJsonBackendService;
     private StringBackendService mStringBackendService;
 
@@ -41,15 +41,15 @@ public class BackendServiceProxyImp implements BackendServiceProxy {
         mJsonBackendService = jsonRetrofit.create(JsonBackendService.class);
     }
 
-    private static Integer tryParse(String string) {
+    private static Integer tryParse(String string) throws UnknownFormat {
         try {
             return Integer.valueOf(string);
         } catch (NumberFormatException ex) {
-            return null;
+            throw new UnknownFormat(string);
         }
     }
 
-    private static List<Integer> getDefaultYears(String firstString) {
+    private static List<Integer> getDefaultYears(String firstString) throws UnknownFormat {
         String[] items = firstString.split(",");
         List<Integer> result = new ArrayList<>();
 
@@ -58,34 +58,21 @@ public class BackendServiceProxyImp implements BackendServiceProxy {
                 result.add(Integer.valueOf(items[index]));
             }
         } catch (NumberFormatException ex) {
-            return null;
+            throw new UnknownFormat(firstString);
         }
         return result;
     }
 
     public Flowable<List<Company>> getAllCompanies(String token) {
-        try {
-            return mJsonBackendService.getAllCompanies(token);
-        } catch (Exception ex) {
-            return Flowable.error(ex);
-        }
+        return mJsonBackendService.getAllCompanies(token);
     }
 
     public Flowable<List<Indicator>> getAllIndicators(String token) {
-        Flowable<String> allIndicators;
-        try {
-            allIndicators = mStringBackendService.getAllIndicators(token);
-        } catch (Exception ex) {
-            return Flowable.error(ex);
-        }
-
-        return allIndicators.map(str -> {
-            String[] strings = str.split(RegexEndLine);
+        return mStringBackendService.getAllIndicators(token).map(str -> {
+            String[] strings = str.split(sREGEX_END_LINE);
             List<Indicator> indicators = new ArrayList<>();
             String headerString = strings[0];
             List<Integer> defYears = getDefaultYears(headerString);
-            if (defYears == null)
-                throw new UnknownFormat(headerString);
 
             for (int index = 1; index < strings.length; index++) {
                 String string = strings[index];

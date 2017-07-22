@@ -4,13 +4,13 @@ import java.util.List;
 
 public class Indicator {
 
-    public final String mId;
-    public final List<IndicatorInfo> mInfos;
-    public int mTotal;
+    public final String id;
+    public final List<IndicatorInfo> infos;
+    public int Total;
 
     public Indicator(String id, int total, List<IndicatorInfo> infos) {
-        mInfos = infos;
-        mId = id;
-        mTotal = total;
+        this.infos = infos;
+        this.id = id;
+        Total = total;
     }
 }
