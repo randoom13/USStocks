@@ -4,14 +4,11 @@ import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
 import android.text.TextUtils;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -50,13 +47,6 @@ public class TokenDialogFragment extends DialogFragment
         super.onSaveInstanceState(outState);
     }
 
-    @Nullable
-    @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View form = inflater.inflate(R.layout.token_dialog, container);
-        return form;
-    }
-
     private void initializeView(View view) {
         mToken = (EditText) view.findViewById(R.id.token);
         TextView TokenDesc = (TextView) view.findViewById(R.id.token_desc);
@@ -76,10 +66,10 @@ public class TokenDialogFragment extends DialogFragment
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         App.getRequestComponent().inject(this);
-        View view = getView();
+        View view = getActivity().getLayoutInflater().inflate(R.layout.token_dialog, null);
         initializeView(view);
-        return new AlertDialog.Builder(getActivity()).
-                setTitle(R.string.token_dialog_title).setView(view)
+        return new AlertDialog.Builder(getActivity()).setView(view)
+                .setTitle(R.string.token_dialog_title)
                 .setPositiveButton(android.R.string.ok, this)
                 .setOnKeyListener((dialog, keyCode, event) -> {
                     if (keyCode == KeyEvent.KEYCODE_BACK)

@@ -1,5 +1,7 @@
 package amber.random.com.usstocks.service.rest;
 
+import android.util.Log;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.jakewharton.retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
@@ -21,7 +23,7 @@ import retrofit2.http.GET;
 import retrofit2.http.Query;
 
 public class BackendServiceProxyImp implements BackendServiceProxy {
-    private static final String sREGEX_END_LINE = "([ \\t\\r]*\\n[ \\t\\r]*)+";
+    private static final String sRegexEndLine = "([ \\t\\r]*\\n[ \\t\\r]*)+";
     private JsonBackendService mJsonBackendService;
     private StringBackendService mStringBackendService;
 
@@ -41,15 +43,16 @@ public class BackendServiceProxyImp implements BackendServiceProxy {
         mJsonBackendService = jsonRetrofit.create(JsonBackendService.class);
     }
 
-    private static Integer tryParse(String string) throws UnknownFormat {
+    private Integer tryParse(String string, int row) throws UnknownFormat {
         try {
             return Integer.valueOf(string);
         } catch (NumberFormatException ex) {
-            throw new UnknownFormat(string);
+            Log.e(getClass().getSimpleName(), "failed to parse " + string + "in number", ex);
+            throw new UnknownFormat("Failed to parse the indicator value in" + row + " row!", string);
         }
     }
 
-    private static List<Integer> getDefaultYears(String firstString) throws UnknownFormat {
+    private List<Integer> getDefaultYears(String firstString) throws UnknownFormat {
         String[] items = firstString.split(",");
         List<Integer> result = new ArrayList<>();
 
@@ -58,7 +61,8 @@ public class BackendServiceProxyImp implements BackendServiceProxy {
                 result.add(Integer.valueOf(items[index]));
             }
         } catch (NumberFormatException ex) {
-            throw new UnknownFormat(firstString);
+            Log.e(getClass().getSimpleName(), "failed to parse " + firstString + "in numbers", ex);
+            throw new UnknownFormat("Failed to parse the years in 0 row!", firstString);
         }
         return result;
     }
@@ -69,7 +73,7 @@ public class BackendServiceProxyImp implements BackendServiceProxy {
 
     public Flowable<List<Indicator>> getAllIndicators(String token) {
         return mStringBackendService.getAllIndicators(token).map(str -> {
-            String[] strings = str.split(sREGEX_END_LINE);
+            String[] strings = str.split(sRegexEndLine);
             List<Indicator> indicators = new ArrayList<>();
             String headerString = strings[0];
             List<Integer> defYears = getDefaultYears(headerString);
@@ -79,20 +83,24 @@ public class BackendServiceProxyImp implements BackendServiceProxy {
                 List<IndicatorInfo> values = new ArrayList<IndicatorInfo>();
                 Integer total = null;
                 String[] items = string.split(",");
-                if (items.length <= 1)
-                    throw new UnknownFormat(string);
+                if (items.length < 1) {
+                    String message = "Empty string in " + index + " row !";
+                    Log.e(getClass().getSimpleName(), message);
+                    throw new UnknownFormat(message, string);
+                }
                 for (int ind = 1; ind < items.length; ind++) {
-                    Integer number = tryParse(items[ind]);
-                    if (number == null)
-                        throw new UnknownFormat(string);
+                    Integer number = tryParse(items[ind], index);
 
                     if (ind == 1)
                         total = number;
                     else if (values.size() < defYears.size())
                         values.add(new IndicatorInfo(defYears.get(values.size()), number));
                 }
-                if (total == null || values.isEmpty())
-                    throw new UnknownFormat(string);
+                if (total == null || values.isEmpty()) {
+                    String message = "No values for " + items[0] + " in " + index + " row!";
+                    Log.e(getClass().getSimpleName(), message);
+                    throw new UnknownFormat(message, string);
+                }
 
                 indicators.add(new Indicator(items[0], total, values));
             }
