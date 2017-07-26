@@ -10,8 +10,8 @@ import java.lang.ref.WeakReference;
 
 import io.reactivex.Observable;
 
-public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.ViewHolder>
-        extends RecyclerView.Adapter<Holder> implements SelectableAdapter {
+public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolder>
+        extends RecyclerView.Adapter<T> implements SelectableAdapter {
     protected final WeakReference<BaseRecyclerFragment> mRecyclerFragmentWR;
     protected BaseSelectionInfoProxy mSelectionInfoProxy;
     protected Cursor mDataCursor;
@@ -24,9 +24,9 @@ public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.View
         invalidateVisibleIndices();
     }
 
-    public abstract Holder onCreateViewHolder(ViewGroup viewGroup, int i);
+    public abstract T onCreateViewHolder(ViewGroup viewGroup, int i);
 
-    public abstract void onBindViewHolder(Holder holder, int i);
+    public abstract void onBindViewHolder(T holder, int i);
 
     @Override
     public int getItemCount() {
@@ -36,7 +36,7 @@ public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.View
     }
 
     @Override
-    public void onViewDetachedFromWindow(Holder holder) {
+    public void onViewDetachedFromWindow(T holder) {
         super.onViewDetachedFromWindow(holder);
         int position = holder.getAdapterPosition();
         if (mMaxVisibleIndex == position)
@@ -46,7 +46,7 @@ public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.View
     }
 
     @Override
-    public void onViewAttachedToWindow(Holder holder) {
+    public void onViewAttachedToWindow(T holder) {
         super.onViewAttachedToWindow(holder);
         int position = holder.getAdapterPosition();
         mMaxVisibleIndex = Math.max(position, mMaxVisibleIndex);
@@ -108,16 +108,17 @@ public abstract class BaseRecyclerCursorAdapter<Holder extends RecyclerView.View
         mMaxVisibleIndex = Integer.MIN_VALUE;
         mMinVisibleIndex = Integer.MAX_VALUE;
     }
+
     private void updateVisibleItemsSelection() {
         for (int index = mMinVisibleIndex; index <= mMaxVisibleIndex; index++) {
-            View view = null;
             BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
-            if (null != fragment)
-                view = fragment.getRecyclerView().getChildAt(index);
-            if (view != null) {
-                boolean isChecked = mSelectionInfoProxy.isSelected(index);
-                if (view.isActivated() != isChecked)
-                    view.setActivated(isChecked);
+            if (null != fragment) {
+                View view = fragment.getRecyclerView().getChildAt(index);
+                if (null != view) {
+                    boolean isChecked = mSelectionInfoProxy.isSelected(index);
+                    if (view.isActivated() != isChecked)
+                        view.setActivated(isChecked);
+                }
             }
         }
     }

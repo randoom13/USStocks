@@ -2,28 +2,31 @@ package amber.random.com.usstocks.exceptions;
 
 import com.jakewharton.retrofit2.adapter.rxjava2.HttpException;
 
-public class UpdateFailed extends Exception {
+import retrofit2.Response;
+
+public class UpdateFailedException extends Exception {
     private static final int sInvalidToken = 403;
+
     public final Throwable innerException;
 
-    private UpdateFailed(Throwable exception) {
+    private UpdateFailedException(Throwable exception) {
         innerException = exception;
     }
 
-    public UpdateFailed(UnknownFormat innerException) {
+    public UpdateFailedException(UnknownFormatException innerException) {
         this((Throwable) innerException);
     }
 
-    public UpdateFailed(HttpException innerException) {
+    public UpdateFailedException(HttpException innerException) {
         this((Throwable) innerException);
     }
 
-    public UpdateFailed(android.database.SQLException innerException) {
+    public UpdateFailedException(android.database.SQLException innerException) {
         this((Throwable) innerException);
     }
 
 
-    public UpdateFailed(NoConnectionException innerException) {
+    public UpdateFailedException(NoConnectionException innerException) {
         this((Throwable) innerException);
     }
 
@@ -31,6 +34,7 @@ public class UpdateFailed extends Exception {
         if (!(innerException instanceof HttpException))
             return false;
         HttpException exception = (HttpException) innerException;
-        return exception.response() != null && exception.response().code() == sInvalidToken;
+        Response response = exception.response();
+        return null != response && response.code() == sInvalidToken;
     }
 }

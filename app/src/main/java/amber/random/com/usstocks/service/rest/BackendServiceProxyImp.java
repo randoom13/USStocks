@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import amber.random.com.usstocks.BuildConfig;
-import amber.random.com.usstocks.exceptions.UnknownFormat;
+import amber.random.com.usstocks.exceptions.UnknownFormatException;
 import amber.random.com.usstocks.models.AutoValueGsonFactory;
 import amber.random.com.usstocks.models.Company;
 import amber.random.com.usstocks.models.Indicator;
@@ -43,16 +43,16 @@ public class BackendServiceProxyImp implements BackendServiceProxy {
         mJsonBackendService = jsonRetrofit.create(JsonBackendService.class);
     }
 
-    private Integer tryParse(String string, int row) throws UnknownFormat {
+    private Integer tryParse(String string, int row) throws UnknownFormatException {
         try {
             return Integer.valueOf(string);
         } catch (NumberFormatException ex) {
             Log.e(getClass().getSimpleName(), "failed to parse " + string + "in number", ex);
-            throw new UnknownFormat("Failed to parse the indicator value in" + row + " row!", string);
+            throw new UnknownFormatException("Failed to parse the indicator value in" + row + " row!", string);
         }
     }
 
-    private List<Integer> getDefaultYears(String firstString) throws UnknownFormat {
+    private List<Integer> getDefaultYears(String firstString) throws UnknownFormatException {
         String[] items = firstString.split(",");
         List<Integer> result = new ArrayList<>();
 
@@ -62,7 +62,7 @@ public class BackendServiceProxyImp implements BackendServiceProxy {
             }
         } catch (NumberFormatException ex) {
             Log.e(getClass().getSimpleName(), "failed to parse " + firstString + "in numbers", ex);
-            throw new UnknownFormat("Failed to parse the years in 0 row!", firstString);
+            throw new UnknownFormatException("Failed to parse the years in 0 row!", firstString);
         }
         return result;
     }
@@ -86,7 +86,7 @@ public class BackendServiceProxyImp implements BackendServiceProxy {
                 if (items.length < 1) {
                     String message = "Empty string in " + index + " row !";
                     Log.e(getClass().getSimpleName(), message);
-                    throw new UnknownFormat(message, string);
+                    throw new UnknownFormatException(message, string);
                 }
                 for (int ind = 1; ind < items.length; ind++) {
                     Integer number = tryParse(items[ind], index);
@@ -99,7 +99,7 @@ public class BackendServiceProxyImp implements BackendServiceProxy {
                 if (total == null || values.isEmpty()) {
                     String message = "No values for " + items[0] + " in " + index + " row!";
                     Log.e(getClass().getSimpleName(), message);
-                    throw new UnknownFormat(message, string);
+                    throw new UnknownFormatException(message, string);
                 }
 
                 indicators.add(new Indicator(items[0], total, values));

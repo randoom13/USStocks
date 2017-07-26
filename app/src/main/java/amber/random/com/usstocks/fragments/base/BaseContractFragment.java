@@ -3,9 +3,9 @@ package amber.random.com.usstocks.fragments.base;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Build;
-import android.support.v4.app.ListFragment;
+import android.support.v4.app.Fragment;
 
-public class BaseContractListFragment<T> extends ListFragment {
+public class BaseContractFragment<T> extends Fragment {
 
     protected T mContract;
 

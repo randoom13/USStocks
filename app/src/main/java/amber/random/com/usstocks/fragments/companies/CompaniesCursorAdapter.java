@@ -14,7 +14,7 @@ public class CompaniesCursorAdapter extends BaseRecyclerCursorAdapter<CompanyHol
     public CompaniesCursorAdapter(BaseRecyclerFragment activity) {
         super(activity);
         // https://www.neotechsoftware.com/blog/android-intent-size-limit
-        mSelectionInfoProxy = new CompaniesSelectionInfoProxy(500);
+        mSelectionInfoProxy = new CompaniesSelectionInfoProxy(300);
     }
 
     @Override

@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.LocalBroadcastManager;
@@ -29,7 +30,7 @@ import javax.inject.Inject;
 import amber.random.com.usstocks.R;
 import amber.random.com.usstocks.database.DataBaseHelperProxy;
 import amber.random.com.usstocks.exceptions.NoConnectionException;
-import amber.random.com.usstocks.exceptions.UpdateFailed;
+import amber.random.com.usstocks.exceptions.UpdateFailedException;
 import amber.random.com.usstocks.fragments.TokenDialogFragment;
 import amber.random.com.usstocks.fragments.base.BaseRecyclerFragment;
 import amber.random.com.usstocks.injection.App;
@@ -54,11 +55,11 @@ public class CompaniesFragment extends
     private BroadcastReceiver mOnUpdateCompleted = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if (!intent.getStringExtra(UpdateDatabaseService.EXTRA_DATA_UPDATE).
-                    equals(UpdateDatabaseService.COMPANIES_LIST))
+            if (!UpdateDatabaseService.COMPANIES_LIST.
+                    equals(intent.getStringExtra(UpdateDatabaseService.EXTRA_DATA_UPDATE)))
                 return;
 
-            UpdateFailed updateFailed = (UpdateFailed) intent.getSerializableExtra(UpdateDatabaseService.EXTRA_DATA_ERROR);
+            UpdateFailedException updateFailed = (UpdateFailedException) intent.getSerializableExtra(UpdateDatabaseService.EXTRA_DATA_ERROR);
             if (updateFailed == null) {
                 loadCompaniesList(false);
                 return;
@@ -83,11 +84,6 @@ public class CompaniesFragment extends
             mDisposable.dispose();
     }
 
-    private void disposeTokenDisposable() {
-        if (mDisposable != null && !mDisposable.isDisposed())
-            mDisposable.dispose();
-    }
-
     @Override
     public void onClick(boolean isClose) {
         if (isClose)
@@ -97,12 +93,12 @@ public class CompaniesFragment extends
     }
 
     private void verifyLiveToken() {
-        disposeTokenDisposable();
+        disposeDisposable();
         mDisposable = mContract.hasToken().subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(res -> {
                     if (!mDisposable.isDisposed())
-                        if (res) {
+                        if (Boolean.TRUE.equals(res)) {
                             mProgress.setVisibility(View.VISIBLE);
                             launchService();
                         } else
@@ -168,7 +164,6 @@ public class CompaniesFragment extends
         mDisposable = mAdapter.launchSelectionDataSync(filter)
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .onErrorReturn((ex) -> false)
                 .subscribe(res -> {
                     if (Boolean.TRUE.equals(res))
                         mContract.showDetails(filter);
@@ -209,14 +204,14 @@ public class CompaniesFragment extends
         mAdapter = new CompaniesCursorAdapter(this);
         mAdapter.onRestoreInstanceState(savedInstanceState);
         mAdapter.addSelectionChangedListener(() -> {
-            updateMultiSelectTitle();
-            if (!mAdapter.isMultiSelectMode()) {
-                showDetails();
+                    updateMultiSelectTitle();
+                    if (!mAdapter.isMultiSelectMode()) {
+                        showDetails();
                     }
                 }
         );
         setAdapter(mAdapter);
-        if (savedInstanceState == null)
+        if (null == savedInstanceState)
             loadCompaniesList(true);
         else mFilter.setText(savedInstanceState.getCharSequence(sStateQuery));
 
@@ -243,7 +238,6 @@ public class CompaniesFragment extends
     @Override
     public void onDestroy() {
         disposeDisposable();
-        disposeTokenDisposable();
         mAdapter.closeResources();
         super.onDestroy();
     }
@@ -258,37 +252,35 @@ public class CompaniesFragment extends
 
     private void failedLoadCompanies() {
         mProgress.setVisibility(View.GONE);
-        Snackbar snackbar = Snackbar.make(getRecyclerView(), R.string.failed_load_companies, Snackbar.LENGTH_LONG);
+        Snackbar snackbar = Snackbar.make(getRecyclerView(), R.string.failed_update_companies, Snackbar.LENGTH_LONG);
         snackbar.show();
     }
 
 
     private void loadCompaniesList(boolean forceUpdateDatabase) {
         disposeDisposable();
-        mDisposable = Observable.fromCallable(() ->
+        String filter = mFilter.getText().toString();
+        Observable<LoadCompaniesResult> loadCompaniesObservable = Observable.fromCallable(() ->
         {
-            String filter = mFilter.getText().toString();
             Integer maxId = mDataBaseHelper.getMaxId(filter);
             Cursor cursor = mDataBaseHelper.getCompanies(filter);
-            LoadCompaniesResult result = new LoadCompaniesResult();
-            // Anyway, operation cursor.getCount() executes on main thread
-            // when cursor move to any position and this first launch "eats" resources
-            // To avoid slowing the main thread execute this operation on background
-            if (cursor.moveToFirst() || !forceUpdateDatabase) {
-                mAdapter.launchSelectionDataSync(filter).blockingSubscribe();
-                result.cursor = cursor;
-                result.maxId = maxId;
-                result.isResult = false;
-                return result;
-            } else {
-                result.isResult = true;
-                return result;
-            }
-        })
+            LoadCompaniesResult result = new LoadCompaniesResult(cursor, maxId, forceUpdateDatabase);
+            return result;
+        });
+
+        Observable<Boolean> syncSelectionObservable = mAdapter.launchSelectionDataSync(filter);
+        mDisposable = Observable.zip(loadCompaniesObservable, syncSelectionObservable,
+                (loadCompanies, syncSelection) -> Boolean.TRUE.equals(syncSelection) ? loadCompanies : null)
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(res -> {
-                    if (Boolean.TRUE.equals(res.isResult)) {
+                    if (null == res) {
+                        mProgress.setVisibility(View.GONE);
+                        failedLoadCompanies();
+                        return;
+                    }
+
+                    if (Boolean.TRUE.equals(res.needUpdate)) {
                         mProgress.setVisibility(View.VISIBLE);
                         launchService();
                         return;
@@ -297,8 +289,11 @@ public class CompaniesFragment extends
                     mProgress.setVisibility(View.GONE);
                     mAdapter.updateCursor(res.cursor, res.maxId.toString());
                     updateMultiSelectTitle();
-                }, er -> {
-                    Log.e(this.getClass().getSimpleName(), "Can't load companies", er);
+                }, ex -> {
+                    Log.e(this.getClass().getSimpleName(), "Failed to load companies for filter = " + filter, ex);
+                    if (!(ex instanceof SQLException))
+                        throw new RuntimeException(ex.getMessage());
+
                     mProgress.setVisibility(View.GONE);
                     failedLoadCompanies();
                 });
@@ -316,9 +311,18 @@ public class CompaniesFragment extends
     }
 
     private class LoadCompaniesResult {
-        Cursor cursor;
-        Integer maxId;
-        Boolean isResult;
+        final Cursor cursor;
+        final Integer maxId;
+        final Boolean needUpdate;
+
+        public LoadCompaniesResult(Cursor cursor, Integer maxId, boolean forceUpdateDatabase) {
+            this.cursor = cursor;
+            this.maxId = maxId;
+            // Anyway, operation cursor.getCount() executes on main thread
+            // when cursor move to any position and this first launch "eats" resources
+            // To avoid slowing the main thread execute this operation on background
+            needUpdate = !(this.cursor.moveToFirst() || !forceUpdateDatabase);
+        }
     }
 
 }

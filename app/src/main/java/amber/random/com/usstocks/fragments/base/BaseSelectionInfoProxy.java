@@ -1,9 +1,11 @@
 package amber.random.com.usstocks.fragments.base;
 
 import android.database.Cursor;
+import android.database.SQLException;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.os.CancellationSignal;
+import android.util.Log;
 
 import java.util.Map;
 
@@ -77,9 +79,7 @@ public abstract class BaseSelectionInfoProxy {
             disposeDisposable();
             mDisposable = launchDatabaseSync(false)
                     .subscribeOn(Schedulers.computation())
-                    .subscribe(r -> {
-                    }, er -> {
-                    });
+                    .subscribe();
         }
     }
 
@@ -96,9 +96,7 @@ public abstract class BaseSelectionInfoProxy {
                         disposeDisposable();
                         mDisposable = launchDatabaseSync(true)
                                 .subscribeOn(Schedulers.computation())
-                                .subscribe(r -> {
-                                }, er -> {
-                                });
+                                .subscribe();
                         return;
                     }
                 } else
@@ -191,8 +189,8 @@ public abstract class BaseSelectionInfoProxy {
     protected Observable<Boolean> launchDatabaseSync(boolean resetSelection,
                                                      CancellationSignal cancellation) {
 
+        String filter = mFilter;
         return Observable.fromCallable(() -> {
-            String filter = mFilter;
             Map<Integer, Boolean> syncCheckedCache =
                     getSyncCheckedInfo(mDataBaseHelper, resetSelection,
                             mCheckedCache, cancellation);
@@ -204,11 +202,14 @@ public abstract class BaseSelectionInfoProxy {
             swapCursor(cursor, syncCheckedCache);
             return true;
         })
-                .onErrorReturn(er -> {
+                .onErrorReturn(ex -> {
                             if (!cancellation.isCanceled())
                                 resetSync();
+                            Log.e(getClass().getSimpleName(), "Failed to sync selected companies for filter =" + filter, ex);
+                            if (!(ex instanceof SQLException))
+                                throw (Exception) ex;
 
-                    throw (Exception) er;
+                            return false;
                         }
                 );
     }

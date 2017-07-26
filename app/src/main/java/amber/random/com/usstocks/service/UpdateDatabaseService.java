@@ -17,15 +17,14 @@ import javax.inject.Inject;
 
 import amber.random.com.usstocks.database.DataBaseHelperProxy;
 import amber.random.com.usstocks.exceptions.NoConnectionException;
-import amber.random.com.usstocks.exceptions.UnknownFormat;
-import amber.random.com.usstocks.exceptions.UpdateFailed;
+import amber.random.com.usstocks.exceptions.UnknownFormatException;
+import amber.random.com.usstocks.exceptions.UpdateFailedException;
 import amber.random.com.usstocks.injection.App;
 import amber.random.com.usstocks.service.rest.BackendServiceProxy;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 public class UpdateDatabaseService extends Service {
-
     //region intent constants
 
     public final static String UPDATE_COMPLETED = "update_completed";
@@ -59,23 +58,13 @@ public class UpdateDatabaseService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         App.getRequestComponent().inject(this);
-        String commandName = intent.getStringExtra(EXTRA_DATA_UPDATE);
-        if (COMPANIES_LIST.equals(commandName)) {
-            if (!isNetworkAvailable()) {
-                sentIntent(COMPANIES_LIST, new UpdateFailed(new NoConnectionException()));
-                stopSelf(startId);
-            } else
-                getCompaniesList(getToken(intent), startId);
-
-        } else if (INDICATORS_LIST.equals(commandName)) {
-            if (!isNetworkAvailable()) {
-                sentIntent(INDICATORS_LIST, new UpdateFailed(new NoConnectionException()));
-                stopSelf(startId);
-            } else
-                getIndicatorsList(getToken(intent), startId);
-        } else if (!TextUtils.isEmpty(commandName))
-            Log.d(getClass().getSimpleName(), "Unknown command: " + commandName);
-
+        String tableName = intent.getStringExtra(EXTRA_DATA_UPDATE);
+        if (COMPANIES_LIST.equals(tableName)) {
+            getCompaniesList(getToken(intent), startId);
+        } else if (INDICATORS_LIST.equals(tableName)) {
+            getIndicatorsList(getToken(intent), startId);
+        } else if (!TextUtils.isEmpty(tableName))
+            Log.w(getClass().getSimpleName(), " Update for " + tableName + " is not implemented!");
 
         return START_NOT_STICKY;
     }
@@ -96,19 +85,23 @@ public class UpdateDatabaseService extends Service {
 
     private boolean isNetworkAvailable() {
         final ConnectivityManager connectivityManager = ((ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE));
-        return connectivityManager.getActiveNetworkInfo() != null && connectivityManager.getActiveNetworkInfo().isConnected();
+        return null != connectivityManager.getActiveNetworkInfo() && connectivityManager.getActiveNetworkInfo().isConnected();
     }
 
     private void getCompaniesList(String token, Integer startId) {
-        mDisposable = mBackendService.getAllCompanies(token)
-                .subscribeOn(Schedulers.computation())
-                .observeOn(Schedulers.io())
-                .subscribe(companies ->
-                        {
-                            mDataBaseHelper.addCompanies(companies);
-                            sentIntent(COMPANIES_LIST, null);
-                        }, ex -> handleException(COMPANIES_LIST, ex),
-                        () -> stopSelf(startId));
+        if (!isNetworkAvailable()) {
+            sentIntent(COMPANIES_LIST, new UpdateFailedException(new NoConnectionException()));
+            stopSelf(startId);
+        } else
+            mDisposable = mBackendService.getAllCompanies(token)
+                    .subscribeOn(Schedulers.computation())
+                    .observeOn(Schedulers.io())
+                    .subscribe(companies ->
+                            {
+                                mDataBaseHelper.addCompanies(companies);
+                                sentIntent(COMPANIES_LIST, null);
+                            }, ex -> handleException(COMPANIES_LIST, ex),
+                            () -> stopSelf(startId));
     }
 
     @Override
@@ -119,31 +112,37 @@ public class UpdateDatabaseService extends Service {
         super.onDestroy();
     }
 
-    private void handleException(String operationName, Throwable ex) {
+    private void handleException(String tableName, Throwable ex) {
+        if (ex instanceof UnknownFormatException) {
+            Log.e(getClass().getSimpleName(), "Failed to load the " + tableName + " from internet", ex);
+            sentIntent(tableName, new UpdateFailedException((UnknownFormatException) ex));
+        } else
         if (ex instanceof HttpException) {
-            Log.e(getClass().getSimpleName(), "Can't get " + operationName, ex);
-            sentIntent(operationName, new UpdateFailed((HttpException) ex));
-        } else if (ex instanceof SQLException) {
-            Log.e(getClass().getSimpleName(), "Can't save " + operationName + " in database", ex);
-            sentIntent(operationName, new UpdateFailed((SQLException) ex));
-        } else if (ex instanceof UnknownFormat) {
-            Log.e(getClass().getSimpleName(), "Can't get companies list", ex);
-            sentIntent(operationName, new UpdateFailed((UnknownFormat) ex));
+            Log.e(getClass().getSimpleName(), "Failed to load the " + tableName + " from internet", ex);
+            sentIntent(tableName, new UpdateFailedException((HttpException) ex));
+        } else
+            if (ex instanceof SQLException) {
+            Log.e(getClass().getSimpleName(), "Failed to save " + tableName + " in database", ex);
+            sentIntent(tableName, new UpdateFailedException((SQLException) ex));
         } else {
-            Log.e(getClass().getSimpleName(), "Unhandled exception for " + operationName, ex);
+            Log.e(getClass().getSimpleName(), "Unhandled exception during update " + tableName, ex);
             throw new RuntimeException(ex.getMessage());
         }
     }
 
     private void getIndicatorsList(String token, int startId) {
-        mDisposable = mBackendService.getAllIndicators(token)
-                .subscribeOn(Schedulers.computation())
-                .observeOn(Schedulers.io())
-                .subscribe(indicators ->
-                        {
-                            mDataBaseHelper.addIndicators(indicators);
-                            sentIntent(INDICATORS_LIST, null);
-                        }, ex -> handleException(INDICATORS_LIST, ex),
-                        () -> stopSelf(startId));
+        if (!isNetworkAvailable()) {
+            sentIntent(INDICATORS_LIST, new UpdateFailedException(new NoConnectionException()));
+            stopSelf(startId);
+        } else
+            mDisposable = mBackendService.getAllIndicators(token)
+                    .subscribeOn(Schedulers.computation())
+                    .observeOn(Schedulers.io())
+                    .subscribe(indicators ->
+                            {
+                                mDataBaseHelper.addIndicators(indicators);
+                                sentIntent(INDICATORS_LIST, null);
+                            }, ex -> handleException(INDICATORS_LIST, ex),
+                            () -> stopSelf(startId));
     }
 }

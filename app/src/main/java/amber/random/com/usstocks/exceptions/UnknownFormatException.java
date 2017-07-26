@@ -1,9 +1,9 @@
 package amber.random.com.usstocks.exceptions;
 
-public class UnknownFormat extends Exception {
+public class UnknownFormatException extends Exception {
     public final String invalidString;
 
-    public UnknownFormat(String message, String invalidString) {
+    public UnknownFormatException(String message, String invalidString) {
         super(message);
         this.invalidString = invalidString;
     }
