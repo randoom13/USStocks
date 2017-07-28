@@ -17,7 +17,7 @@ import com.lsjwzh.widget.recyclerviewpager.TabLayoutSupport;
 import javax.inject.Inject;
 
 import amber.random.com.usstocks.R;
-import amber.random.com.usstocks.database.DataBaseHelper;
+import amber.random.com.usstocks.database.DataBaseHelperProxy;
 import amber.random.com.usstocks.injection.App;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -27,7 +27,7 @@ import io.reactivex.schedulers.Schedulers;
 public class CompaniesDetailsFragment extends Fragment {
     private static final String sFILTER = "filter";
     @Inject
-    protected DataBaseHelper mDataBaseHelper;
+    protected DataBaseHelperProxy mDataBaseHelper;
     private Disposable mDisposable;
 
     public static CompaniesDetailsFragment newInstance(String filter) {

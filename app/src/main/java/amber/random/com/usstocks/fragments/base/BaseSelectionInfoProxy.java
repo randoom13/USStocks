@@ -11,7 +11,7 @@ import java.util.Map;
 
 import javax.inject.Inject;
 
-import amber.random.com.usstocks.database.DataBaseHelper;
+import amber.random.com.usstocks.database.DataBaseHelperProxy;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
@@ -25,7 +25,7 @@ public abstract class BaseSelectionInfoProxy {
     private final Object mlock = new Object();
     protected String mFilter = "";
     @Inject
-    protected DataBaseHelper mDataBaseHelper;
+    protected DataBaseHelperProxy mDataBaseHelper;
     private ParcelableSelectedCache mCheckedCache = new ParcelableSelectedCache();
     private boolean mSyncing = false;
     private Cursor mCursor;
@@ -222,7 +222,7 @@ public abstract class BaseSelectionInfoProxy {
     }
 
 
-    protected abstract Map<Integer, Boolean> getSyncCheckedInfo(DataBaseHelper database,
+    protected abstract Map<Integer, Boolean> getSyncCheckedInfo(DataBaseHelperProxy database,
                                                                 boolean resetSelection,
                                                                 Map<Integer, Boolean> checkedCache,
                                                                 CancellationSignal cancellation);

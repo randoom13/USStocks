@@ -14,12 +14,6 @@ public class RequestModule {
 
     @Provides
     @Singleton
-    DataBaseHelper DataBaseHelper(Application application) {
-        return new DataBaseHelper(application);
-    }
-
-    @Provides
-    @Singleton
     DataBaseHelperProxy getDataBaseHelper(Application application) {
         return new DataBaseHelper(application);
     }
