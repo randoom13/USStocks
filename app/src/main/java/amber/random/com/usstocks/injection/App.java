@@ -1,6 +1,7 @@
 package amber.random.com.usstocks.injection;
 
 import android.app.Application;
+import android.support.annotation.VisibleForTesting;
 
 import amber.random.com.usstocks.injection.modules.AppModule;
 import amber.random.com.usstocks.injection.modules.NetworkModule;
@@ -13,13 +14,19 @@ public class App extends Application {
         return mRequestComponent;
     }
 
+    @VisibleForTesting(otherwise = VisibleForTesting.NONE)
+    public static void setRequestComponent(RequestComponent requestComponent) {
+        mRequestComponent = requestComponent;
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
-        mRequestComponent = DaggerRequestComponent.builder()
+        DebugRequestComponent requestComponent = DaggerDebugRequestComponent.builder()
                 .appModule(new AppModule(this))
                 .requestModule(new RequestModule())
                 .networkModule(new NetworkModule())
                 .build();
+        mRequestComponent = requestComponent;
     }
 }

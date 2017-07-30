@@ -2,11 +2,9 @@ package amber.random.com.usstocks.fragments;
 
 import android.app.Dialog;
 import android.content.DialogInterface;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
-import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
@@ -16,6 +14,7 @@ import javax.inject.Inject;
 
 import amber.random.com.usstocks.R;
 import amber.random.com.usstocks.injection.App;
+import amber.random.com.usstocks.preference.AppPreferences;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
@@ -23,19 +22,16 @@ import io.reactivex.schedulers.Schedulers;
 
 public class TokenDialogFragment extends DialogFragment
         implements DialogInterface.OnClickListener {
-    private static final String sToken = "token";
-    private static final String sDescResId = "desc";
+    private static final String sDescResId = "desc_id";
     @Inject
-    protected SharedPreferences mSharedPreferences;
+    protected AppPreferences mAppPreferences;
     private EditText mToken;
-    private String mTokenKey;
     private TokenDialogListener mListener;
     private Disposable mSaveTokenDisposable;
 
-    public static TokenDialogFragment newInstance(String tokenKey, int descResId) {
+    public static TokenDialogFragment newInstance(int descResId) {
         TokenDialogFragment fragment = new TokenDialogFragment();
         Bundle bundle = new Bundle();
-        bundle.putString(sToken, tokenKey);
         bundle.putInt(sDescResId, descResId);
         fragment.setArguments(bundle);
         return fragment;
@@ -51,11 +47,10 @@ public class TokenDialogFragment extends DialogFragment
         mToken = (EditText) view.findViewById(R.id.token);
         TextView TokenDesc = (TextView) view.findViewById(R.id.token_desc);
         if (getArguments() != null) {
-            if (TextUtils.isEmpty(mTokenKey))
-                mTokenKey = getArguments().getString(sToken);
-            if (!TextUtils.isEmpty(mTokenKey)) {
-                String token = mSharedPreferences.getString(mTokenKey, "");
+            if (mAppPreferences.hasToken()) {
+                String token = mAppPreferences.getToken();
                 mToken.setText(token);
+                mToken.setSelection(token.length());
             }
             Integer resId = getArguments().getInt(sDescResId);
             if (null != resId)
@@ -65,6 +60,7 @@ public class TokenDialogFragment extends DialogFragment
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
+        //    setRetainInstance(false);
         App.getRequestComponent().inject(this);
         View view = getActivity().getLayoutInflater().inflate(R.layout.token_dialog, null);
         initializeView(view);
@@ -95,17 +91,14 @@ public class TokenDialogFragment extends DialogFragment
 
     @Override
     public void onDestroyView() {
-        super.onDestroyView();
         mListener = null;
         disposeSaveTokenDisposable();
+        super.onDestroyView();
     }
 
     private Boolean saveNewToken() {
-        if (!TextUtils.isEmpty(mTokenKey)) {
-            mSharedPreferences.edit().putString(mTokenKey, mToken.getText().toString()).commit();
-            return true;
-        }
-        return false;
+        mAppPreferences.setToken(mToken.getText().toString());
+        return true;
     }
 
     private void onListener(boolean isClose) {

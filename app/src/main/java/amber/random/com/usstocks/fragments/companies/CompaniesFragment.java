@@ -34,6 +34,7 @@ import amber.random.com.usstocks.exceptions.UpdateFailedException;
 import amber.random.com.usstocks.fragments.TokenDialogFragment;
 import amber.random.com.usstocks.fragments.base.BaseRecyclerFragment;
 import amber.random.com.usstocks.injection.App;
+import amber.random.com.usstocks.preference.AppPreferences;
 import amber.random.com.usstocks.service.UpdateDatabaseService;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -48,6 +49,8 @@ public class CompaniesFragment extends
     private final static String sStateQuery = "jk";
     @Inject
     protected DataBaseHelperProxy mDataBaseHelper;
+    @Inject
+    protected AppPreferences mAppPreferences;
     private EditText mFilter;
     private ProgressBar mProgress;
     private CompaniesCursorAdapter mAdapter;
@@ -94,7 +97,8 @@ public class CompaniesFragment extends
 
     private void verifyLiveToken() {
         disposeDisposable();
-        mDisposable = mContract.hasToken().subscribeOn(Schedulers.computation())
+        mDisposable = Observable.fromCallable(() -> mAppPreferences.hasToken())
+                .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(res -> {
                     if (!mDisposable.isDisposed())
@@ -245,7 +249,6 @@ public class CompaniesFragment extends
     private void launchService() {
         Intent intent = new Intent(getActivity(), UpdateDatabaseService.class);
         intent.putExtra(UpdateDatabaseService.EXTRA_DATA_UPDATE, UpdateDatabaseService.COMPANIES_LIST);
-        intent.putExtra(UpdateDatabaseService.EXTRA_TOKEN, mContract.getTokenKey());
         getActivity().startService(intent);
     }
 
@@ -304,10 +307,6 @@ public class CompaniesFragment extends
         void showDetails(String filter);
 
         void showTokenDialog(int descResId, TokenDialogFragment.TokenDialogListener listener, boolean cancelable);
-
-        String getTokenKey();
-
-        Observable<Boolean> hasToken();
     }
 
     private class LoadCompaniesResult {

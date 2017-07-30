@@ -3,7 +3,6 @@ package amber.random.com.usstocks.service;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.database.SQLException;
 import android.net.ConnectivityManager;
 import android.os.IBinder;
@@ -20,6 +19,7 @@ import amber.random.com.usstocks.exceptions.NoConnectionException;
 import amber.random.com.usstocks.exceptions.UnknownFormatException;
 import amber.random.com.usstocks.exceptions.UpdateFailedException;
 import amber.random.com.usstocks.injection.App;
+import amber.random.com.usstocks.preference.AppPreferences;
 import amber.random.com.usstocks.service.rest.BackendServiceProxy;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
@@ -33,7 +33,6 @@ public class UpdateDatabaseService extends Service {
     public final static String INDICATORS_LIST = "indicators_list";
     public final static String EXTRA_DATA_UPDATE = "update";
     public final static String EXTRA_DATA_ERROR = "error";
-    public final static String EXTRA_TOKEN = "token";
 
     //endregion intent constants
 
@@ -42,27 +41,19 @@ public class UpdateDatabaseService extends Service {
     @Inject
     protected BackendServiceProxy mBackendService;
     @Inject
-    protected SharedPreferences mSharedPreferences;
+    protected AppPreferences mAppPreferences;
 
     private Disposable mDisposable;
 
-    private String getToken(Intent intent) {
-        String tokenKey = intent.getStringExtra(EXTRA_TOKEN);
-        String token = "";
-        if (!TextUtils.isEmpty(tokenKey)) {
-            token = mSharedPreferences.getString(tokenKey, "");
-        }
-        return token;
-    }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         App.getRequestComponent().inject(this);
         String tableName = intent.getStringExtra(EXTRA_DATA_UPDATE);
         if (COMPANIES_LIST.equals(tableName)) {
-            getCompaniesList(getToken(intent), startId);
+            getCompaniesList(startId);
         } else if (INDICATORS_LIST.equals(tableName)) {
-            getIndicatorsList(getToken(intent), startId);
+            getIndicatorsList(startId);
         } else if (!TextUtils.isEmpty(tableName))
             Log.w(getClass().getSimpleName(), " Update for " + tableName + " is not implemented!");
 
@@ -88,12 +79,12 @@ public class UpdateDatabaseService extends Service {
         return null != connectivityManager.getActiveNetworkInfo() && connectivityManager.getActiveNetworkInfo().isConnected();
     }
 
-    private void getCompaniesList(String token, Integer startId) {
+    private void getCompaniesList(Integer startId) {
         if (!isNetworkAvailable()) {
             sentIntent(COMPANIES_LIST, new UpdateFailedException(new NoConnectionException()));
             stopSelf(startId);
         } else
-            mDisposable = mBackendService.getAllCompanies(token)
+            mDisposable = mBackendService.getAllCompanies(mAppPreferences.getToken())
                     .subscribeOn(Schedulers.computation())
                     .observeOn(Schedulers.io())
                     .subscribe(companies ->
@@ -116,12 +107,10 @@ public class UpdateDatabaseService extends Service {
         if (ex instanceof UnknownFormatException) {
             Log.e(getClass().getSimpleName(), "Failed to load the " + tableName + " from internet", ex);
             sentIntent(tableName, new UpdateFailedException((UnknownFormatException) ex));
-        } else
-        if (ex instanceof HttpException) {
+        } else if (ex instanceof HttpException) {
             Log.e(getClass().getSimpleName(), "Failed to load the " + tableName + " from internet", ex);
             sentIntent(tableName, new UpdateFailedException((HttpException) ex));
-        } else
-            if (ex instanceof SQLException) {
+        } else if (ex instanceof SQLException) {
             Log.e(getClass().getSimpleName(), "Failed to save " + tableName + " in database", ex);
             sentIntent(tableName, new UpdateFailedException((SQLException) ex));
         } else {
@@ -130,12 +119,12 @@ public class UpdateDatabaseService extends Service {
         }
     }
 
-    private void getIndicatorsList(String token, int startId) {
+    private void getIndicatorsList(int startId) {
         if (!isNetworkAvailable()) {
             sentIntent(INDICATORS_LIST, new UpdateFailedException(new NoConnectionException()));
             stopSelf(startId);
         } else
-            mDisposable = mBackendService.getAllIndicators(token)
+            mDisposable = mBackendService.getAllIndicators(mAppPreferences.getToken())
                     .subscribeOn(Schedulers.computation())
                     .observeOn(Schedulers.io())
                     .subscribe(indicators ->

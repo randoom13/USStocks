@@ -1,11 +1,9 @@
 package amber.random.com.usstocks;
 
 
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
-import android.text.TextUtils;
 
 import javax.inject.Inject;
 
@@ -13,6 +11,7 @@ import amber.random.com.usstocks.fragments.TokenDialogFragment;
 import amber.random.com.usstocks.fragments.companies.CompaniesFragment;
 import amber.random.com.usstocks.fragments.companies_details.CompaniesDetailsFragment;
 import amber.random.com.usstocks.injection.App;
+import amber.random.com.usstocks.preference.AppPreferences;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
@@ -23,10 +22,9 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
         TokenDialogFragment.TokenDialogListener {
     public static final String COMPANIES_TAG = "companies_tag";
     public static final String COMPANY_DETAILS_TAG = "company_details_tag";
-    public static final String TOKEN_KEY = "unique_token";
     public static final String TOKEN_TAG = "token_dialog_tag";
     @Inject
-    protected SharedPreferences mSharedPreferences;
+    protected AppPreferences mAppPreferences;
     private CompaniesFragment mCompaniesFragment = null;
     private CompaniesDetailsFragment mCompaniesDetailsFragment = null;
     private Disposable mDisposable;
@@ -73,18 +71,6 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
     }
 
     //region CompaniesFragment.Contract implementation
-    @Override
-    public Observable<Boolean> hasToken() {
-        return Observable.fromCallable(() -> {
-            String token = mSharedPreferences.getString(TOKEN_KEY, "");
-            return !TextUtils.isEmpty(token);
-        });
-    }
-
-    @Override
-    public String getTokenKey() {
-        return TOKEN_KEY;
-    }
 
     @Override
     public void showDetails(String filter) {
@@ -98,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
 
     @Override
     public void showTokenDialog(int descResId, TokenDialogFragment.TokenDialogListener listener, boolean cancelable) {
-        TokenDialogFragment dialogFragment = TokenDialogFragment.newInstance(TOKEN_KEY, descResId);
+        TokenDialogFragment dialogFragment = TokenDialogFragment.newInstance(descResId);
         dialogFragment.setCancelable(cancelable);
         if (listener != null)
             dialogFragment.addClickListener(listener);
@@ -124,7 +110,8 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
 
     private void verifyLiveToken() {
         disposeDisposable();
-        mDisposable = hasToken().observeOn(AndroidSchedulers.mainThread())
+        mDisposable = Observable.fromCallable(() -> mAppPreferences.hasToken())
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.computation())
                 .subscribe(res ->
                 {
