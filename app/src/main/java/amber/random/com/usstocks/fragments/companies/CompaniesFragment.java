@@ -14,6 +14,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -24,6 +25,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import javax.inject.Inject;
 
@@ -52,6 +54,7 @@ public class CompaniesFragment extends
     @Inject
     protected AppPreferences mAppPreferences;
     private EditText mFilter;
+    private TextView mEmptyRecordsList;
     private ProgressBar mProgress;
     private CompaniesCursorAdapter mAdapter;
     private Disposable mDisposable;
@@ -97,7 +100,7 @@ public class CompaniesFragment extends
 
     private void verifyLiveToken() {
         disposeDisposable();
-        mDisposable = Observable.fromCallable(() -> mAppPreferences.hasToken())
+        mDisposable = Observable.fromCallable(this.mAppPreferences::hasToken)
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(res -> {
@@ -184,10 +187,11 @@ public class CompaniesFragment extends
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         App.getRequestComponent().inject(this);
         setHasOptionsMenu(true);
-        View view = inflater.inflate(R.layout.companies_fragment_v2, container, false);
+        View view = inflater.inflate(R.layout.companies_fragment, container, false);
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recycler);
         setLayoutManager(new LinearLayoutManager(getActivity()));
         mProgress = (ProgressBar) view.findViewById(R.id.progress);
+        mEmptyRecordsList = (TextView) view.findViewById(R.id.empty_records_list);
         mFilter = (EditText) view.findViewById(R.id.filter);
         mFilter.addTextChangedListener(new TextWatcher() {
             @Override
@@ -201,10 +205,11 @@ public class CompaniesFragment extends
 
             @Override
             public void afterTextChanged(Editable s) {
-
+                displayImage(s.toString());
             }
-        });
 
+        });
+        displayImage("");
         mAdapter = new CompaniesCursorAdapter(this);
         mAdapter.onRestoreInstanceState(savedInstanceState);
         mAdapter.addSelectionChangedListener(() -> {
@@ -222,6 +227,11 @@ public class CompaniesFragment extends
         updateMultiSelectTitle();
 
         return view;
+    }
+
+    private void displayImage(String s) {
+        int leftRes = TextUtils.isEmpty(s) ? R.drawable.ic_search_black_18dp : 0;
+        mFilter.setCompoundDrawablesWithIntrinsicBounds(leftRes, 0, 0, 0);
     }
 
     @Override
@@ -291,6 +301,8 @@ public class CompaniesFragment extends
 
                     mProgress.setVisibility(View.GONE);
                     mAdapter.updateCursor(res.cursor, res.maxId.toString());
+                    boolean showEmptyRecordsList = res.cursor.getCount() == 0;
+                    mEmptyRecordsList.setVisibility(showEmptyRecordsList ? View.VISIBLE : View.GONE);
                     updateMultiSelectTitle();
                 }, ex -> {
                     Log.e(this.getClass().getSimpleName(), "Failed to load companies for filter = " + filter, ex);

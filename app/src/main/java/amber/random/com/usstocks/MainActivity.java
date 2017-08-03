@@ -87,7 +87,7 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
         TokenDialogFragment dialogFragment = TokenDialogFragment.newInstance(descResId);
         dialogFragment.setCancelable(cancelable);
         if (listener != null)
-            dialogFragment.addClickListener(listener);
+            dialogFragment.setClickListener(listener);
         dialogFragment.show(getSupportFragmentManager(), TOKEN_TAG);
     }
 
@@ -110,7 +110,7 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
 
     private void verifyLiveToken() {
         disposeDisposable();
-        mDisposable = Observable.fromCallable(() -> mAppPreferences.hasToken())
+        mDisposable = Observable.fromCallable(this.mAppPreferences::hasToken)
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.computation())
                 .subscribe(res ->

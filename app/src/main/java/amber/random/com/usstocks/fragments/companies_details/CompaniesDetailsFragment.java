@@ -49,7 +49,7 @@ public class CompaniesDetailsFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.main_company_details_fragment2, container, false);
+        View view = inflater.inflate(R.layout.main_company_details_fragment, container, false);
         RecyclerViewPager pager = (RecyclerViewPager) view.findViewById(R.id.pager);
         pager.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
         TabLayout tabLayout = (TabLayout) view.findViewById(R.id.tabs);

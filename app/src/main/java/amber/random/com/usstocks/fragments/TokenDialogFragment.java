@@ -47,20 +47,19 @@ public class TokenDialogFragment extends DialogFragment
         mToken = (EditText) view.findViewById(R.id.token);
         TextView TokenDesc = (TextView) view.findViewById(R.id.token_desc);
         if (getArguments() != null) {
-            if (mAppPreferences.hasToken()) {
-                String token = mAppPreferences.getToken();
-                mToken.setText(token);
-                mToken.setSelection(token.length());
-            }
             Integer resId = getArguments().getInt(sDescResId);
             if (null != resId)
                 TokenDesc.setText(getText(resId));
+        }
+        if (mAppPreferences.hasToken()) {
+            String token = mAppPreferences.getToken();
+            mToken.setText(token);
+            mToken.setSelection(token.length());
         }
     }
 
     @Override
     public Dialog onCreateDialog(Bundle savedInstanceState) {
-        //    setRetainInstance(false);
         App.getRequestComponent().inject(this);
         View view = getActivity().getLayoutInflater().inflate(R.layout.token_dialog, null);
         initializeView(view);
@@ -75,7 +74,7 @@ public class TokenDialogFragment extends DialogFragment
                 .create();
     }
 
-    public void addClickListener(TokenDialogListener listener) {
+    public void setClickListener(TokenDialogListener listener) {
         mListener = listener;
     }
 

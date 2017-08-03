@@ -15,4 +15,6 @@
     <string name="no_connection">No Internet connection</string>
     <string name="failed_update_companies">Failed to update companies!</string>
     <string name="failed_load_companies">Failed to load companies!</string>
+    <string name="filter_hint">Find records</string>
+    <string name="no_records">No records</string>
 </resources>
