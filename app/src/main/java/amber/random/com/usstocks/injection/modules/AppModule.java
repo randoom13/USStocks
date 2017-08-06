@@ -5,7 +5,7 @@ import android.app.Application;
 import javax.inject.Singleton;
 
 import amber.random.com.usstocks.preference.AppPreferences;
-import amber.random.com.usstocks.preference.AppPreferencesImp;
+import amber.random.com.usstocks.preference.AppPreferencesImpl;
 import dagger.Module;
 import dagger.Provides;
 
@@ -26,6 +26,6 @@ public class AppModule {
     @Provides
     @Singleton
     public AppPreferences provides(Application app) {
-        return new AppPreferencesImp(app);
+        return new AppPreferencesImpl(app);
     }
 }

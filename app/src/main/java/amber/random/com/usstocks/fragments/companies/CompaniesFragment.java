@@ -14,7 +14,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
-import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -94,13 +93,13 @@ public class CompaniesFragment extends
     public void onClick(boolean isClose) {
         if (isClose)
             getActivity().finish();
-
-        verifyLiveToken();
+        else
+            verifyLiveToken();
     }
 
     private void verifyLiveToken() {
         disposeDisposable();
-        mDisposable = Observable.fromCallable(this.mAppPreferences::hasToken)
+        mDisposable = this.mAppPreferences.hasToken()
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(res -> {
@@ -205,11 +204,10 @@ public class CompaniesFragment extends
 
             @Override
             public void afterTextChanged(Editable s) {
-                displayImage(s.toString());
             }
 
         });
-        displayImage("");
+        mFilter.setCompoundDrawablesWithIntrinsicBounds(R.drawable.ic_search_black_18dp, 0, 0, 0);
         mAdapter = new CompaniesCursorAdapter(this);
         mAdapter.onRestoreInstanceState(savedInstanceState);
         mAdapter.addSelectionChangedListener(() -> {
@@ -227,11 +225,6 @@ public class CompaniesFragment extends
         updateMultiSelectTitle();
 
         return view;
-    }
-
-    private void displayImage(String s) {
-        int leftRes = TextUtils.isEmpty(s) ? R.drawable.ic_search_black_18dp : 0;
-        mFilter.setCompoundDrawablesWithIntrinsicBounds(leftRes, 0, 0, 0);
     }
 
     @Override
@@ -257,6 +250,8 @@ public class CompaniesFragment extends
     }
 
     private void launchService() {
+        mProgress.setVisibility(View.VISIBLE);
+        mEmptyRecordsList.setVisibility(View.GONE);
         Intent intent = new Intent(getActivity(), UpdateDatabaseService.class);
         intent.putExtra(UpdateDatabaseService.EXTRA_DATA_UPDATE, UpdateDatabaseService.COMPANIES_LIST);
         getActivity().startService(intent);
@@ -265,6 +260,7 @@ public class CompaniesFragment extends
 
     private void failedLoadCompanies() {
         mProgress.setVisibility(View.GONE);
+        mEmptyRecordsList.setVisibility(View.GONE);
         Snackbar snackbar = Snackbar.make(getRecyclerView(), R.string.failed_update_companies, Snackbar.LENGTH_LONG);
         snackbar.show();
     }
@@ -288,13 +284,11 @@ public class CompaniesFragment extends
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(res -> {
                     if (null == res) {
-                        mProgress.setVisibility(View.GONE);
                         failedLoadCompanies();
                         return;
                     }
 
                     if (Boolean.TRUE.equals(res.needUpdate)) {
-                        mProgress.setVisibility(View.VISIBLE);
                         launchService();
                         return;
                     }
@@ -309,7 +303,6 @@ public class CompaniesFragment extends
                     if (!(ex instanceof SQLException))
                         throw new RuntimeException(ex.getMessage());
 
-                    mProgress.setVisibility(View.GONE);
                     failedLoadCompanies();
                 });
     }
@@ -318,7 +311,7 @@ public class CompaniesFragment extends
 
         void showDetails(String filter);
 
-        void showTokenDialog(int descResId, TokenDialogFragment.TokenDialogListener listener, boolean cancelable);
+        void showTokenDialog(int descResId, TokenDialogFragment.TokenDialogListener listener, boolean showCancelButton);
     }
 
     private class LoadCompaniesResult {

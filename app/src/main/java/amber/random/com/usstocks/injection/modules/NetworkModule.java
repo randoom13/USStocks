@@ -9,7 +9,7 @@ import javax.inject.Singleton;
 import amber.random.com.usstocks.BuildConfig;
 import amber.random.com.usstocks.models.AutoValueGsonFactory;
 import amber.random.com.usstocks.service.rest.BackendServiceProxy;
-import amber.random.com.usstocks.service.rest.BackendServiceProxyImp;
+import amber.random.com.usstocks.service.rest.BackendServiceProxyImpl;
 import dagger.Module;
 import dagger.Provides;
 import retrofit2.Retrofit;
@@ -43,6 +43,6 @@ public class NetworkModule {
     @Provides
     @Singleton
     BackendServiceProxy getBackendService() {
-        return new BackendServiceProxyImp();
+        return new BackendServiceProxyImpl();
     }
 }

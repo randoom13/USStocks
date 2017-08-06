@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
 import android.support.v7.app.AlertDialog;
+import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.EditText;
@@ -23,16 +24,19 @@ import io.reactivex.schedulers.Schedulers;
 public class TokenDialogFragment extends DialogFragment
         implements DialogInterface.OnClickListener {
     private static final String sDescResId = "desc_id";
+    private static final String sShowCancelButton = "cancel_button";
+
     @Inject
     protected AppPreferences mAppPreferences;
     private EditText mToken;
     private TokenDialogListener mListener;
     private Disposable mSaveTokenDisposable;
 
-    public static TokenDialogFragment newInstance(int descResId) {
+    public static TokenDialogFragment newInstance(int descResId, boolean showCancelButton) {
         TokenDialogFragment fragment = new TokenDialogFragment();
         Bundle bundle = new Bundle();
         bundle.putInt(sDescResId, descResId);
+        bundle.putBoolean(sShowCancelButton, showCancelButton);
         fragment.setArguments(bundle);
         return fragment;
     }
@@ -51,8 +55,9 @@ public class TokenDialogFragment extends DialogFragment
             if (null != resId)
                 TokenDesc.setText(getText(resId));
         }
-        if (mAppPreferences.hasToken()) {
-            String token = mAppPreferences.getToken();
+
+        String token = mAppPreferences.getToken();
+        if (!TextUtils.isEmpty(token)) {
             mToken.setText(token);
             mToken.setSelection(token.length());
         }
@@ -63,8 +68,12 @@ public class TokenDialogFragment extends DialogFragment
         App.getRequestComponent().inject(this);
         View view = getActivity().getLayoutInflater().inflate(R.layout.token_dialog, null);
         initializeView(view);
-        return new AlertDialog.Builder(getActivity()).setView(view)
-                .setTitle(R.string.token_dialog_title)
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity()).setView(view)
+                .setTitle(R.string.token_dialog_title);
+        if (null != getArguments() && Boolean.TRUE.equals(getArguments().getBoolean(sShowCancelButton)))
+            builder.setNegativeButton(android.R.string.cancel, (dialog, which) -> dialog.dismiss());
+
+        return builder
                 .setPositiveButton(android.R.string.ok, this)
                 .setOnKeyListener((dialog, keyCode, event) -> {
                     if (keyCode == KeyEvent.KEYCODE_BACK)

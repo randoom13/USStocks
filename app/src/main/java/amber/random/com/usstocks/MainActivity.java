@@ -12,7 +12,6 @@ import amber.random.com.usstocks.fragments.companies.CompaniesFragment;
 import amber.random.com.usstocks.fragments.companies_details.CompaniesDetailsFragment;
 import amber.random.com.usstocks.injection.App;
 import amber.random.com.usstocks.preference.AppPreferences;
-import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
@@ -47,8 +46,8 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
     public void onClick(boolean isClose) {
         if (isClose)
             finish();
-
-        verifyLiveToken();
+        else
+            verifyLiveToken();
     }
 
     @Override
@@ -83,9 +82,8 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
 
 
     @Override
-    public void showTokenDialog(int descResId, TokenDialogFragment.TokenDialogListener listener, boolean cancelable) {
-        TokenDialogFragment dialogFragment = TokenDialogFragment.newInstance(descResId);
-        dialogFragment.setCancelable(cancelable);
+    public void showTokenDialog(int descResId, TokenDialogFragment.TokenDialogListener listener, boolean showCancelButton) {
+        TokenDialogFragment dialogFragment = TokenDialogFragment.newInstance(descResId, showCancelButton);
         if (listener != null)
             dialogFragment.setClickListener(listener);
         dialogFragment.show(getSupportFragmentManager(), TOKEN_TAG);
@@ -110,7 +108,7 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
 
     private void verifyLiveToken() {
         disposeDisposable();
-        mDisposable = Observable.fromCallable(this.mAppPreferences::hasToken)
+        mDisposable = this.mAppPreferences.hasToken()
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribeOn(Schedulers.computation())
                 .subscribe(res ->
@@ -118,7 +116,7 @@ public class MainActivity extends AppCompatActivity implements CompaniesFragment
                     if (mDisposable.isDisposed())
                         return;
 
-                    if (res)
+                    if (Boolean.TRUE.equals(res))
                         initializeFragments();
                     else
                         showTokenDialog(R.string.token_dialog_desc, this, false);

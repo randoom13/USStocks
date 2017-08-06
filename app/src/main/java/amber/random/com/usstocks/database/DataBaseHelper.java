@@ -75,8 +75,7 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
             query = " SELECT * FROM " + mSelectedCompaniesTable.name;
         } else {
             query = "SELECT " + mCompaniesTable.id + " FROM "
-                    + mCompaniesTable.name + " WHERE " + mCompaniesTable.latestName
-                    + "  LIKE " + DatabaseUtils.sqlEscapeString("%" + filter + "%");
+                    + mCompaniesTable.name + " WHERE " + getFilterSequence(filter);
 
             query = "SELECT " + mSelectedCompaniesTable.id + " FROM " +
                     mSelectedCompaniesTable.name + " INNER JOIN (" +
@@ -96,8 +95,7 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
                 mSelectedCompaniesTable.id + " = " + mCompaniesTable.id + " LIMIT 1) " +
                 " FROM " + mCompaniesTable.name;
         if (!TextUtils.isEmpty(filter)) {
-            query += " WHERE " + mCompaniesTable.latestName + " LIKE " +
-                    DatabaseUtils.sqlEscapeString("%" + filter + "%");
+            query += " WHERE " + getFilterSequence(filter);
         }
         query += " ORDER BY " + mCompaniesTable.id;
         Cursor cursor = database.rawQuery(query, null);
@@ -108,20 +106,22 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
         Map<Integer, Boolean> syncCheckCompanies = new HashMap<Integer, Boolean>();
         if (checkedCache.isEmpty())
             return syncCheckCompanies;
+
         SQLiteDatabase database = getReadableDatabase();
         StringBuilder unCheckedItemsBuilder = new StringBuilder();
-        StringBuilder checkedItemsbuilder = new StringBuilder();
+        StringBuilder checkedItemsBuilder = new StringBuilder();
+
         for (Map.Entry<Integer, Boolean> cache : checkedCache.entrySet()) {
-            StringBuilder builder = cache.getValue() ? checkedItemsbuilder : unCheckedItemsBuilder;
+            StringBuilder builder = cache.getValue() ? checkedItemsBuilder : unCheckedItemsBuilder;
             if (builder.length() > 0)
                 builder.append(",");
             builder.append(cache.getKey());
         }
         StringBuilder positiveTable = new StringBuilder();
-        if (checkedItemsbuilder.length() > 0) {
+        if (checkedItemsBuilder.length() > 0) {
             positiveTable.append("SELECT " + mSelectedCompaniesTable.id + ", 1 FROM " +
                     mSelectedCompaniesTable.name + " WHERE EXISTS ( SELECT ");
-            positiveTable.append(checkedItemsbuilder);
+            positiveTable.append(checkedItemsBuilder);
             positiveTable.append(") ");
         }
         StringBuilder negativeTable = new StringBuilder();
@@ -137,9 +137,11 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
             builder.append(" UNION ");
         builder.append(negativeTable);
         Cursor cursor = database.rawQuery(builder.toString(), null);
+        final Integer isChecked = 1;
         for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
-            syncCheckCompanies.put(cursor.getInt(0), cursor.getInt(1) == 1);
+            syncCheckCompanies.put(cursor.getInt(0), isChecked.equals(cursor.getInt(1)));
         }
+        cursor.close();
         return syncCheckCompanies;
     }
 
@@ -155,8 +157,7 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
                         " IN ( ";
                 sql += "SELECT " + mCompaniesTable.id + " FROM " +
                         mCompaniesTable.name;
-                sql += " WHERE " + mCompaniesTable.latestName + " LIKE "
-                        + DatabaseUtils.sqlEscapeString("%" + filter + "%") + " )";
+                sql += " WHERE " + getFilterSequence(filter);
             }
             database.execSQL(sql);
             database.setTransactionSuccessful();
@@ -233,13 +234,21 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
         String query = "SELECT MAX(" + mCompaniesTable.id + ") FROM "
                 + mCompaniesTable.name;
         if (!TextUtils.isEmpty(filter)) {
-            query += " WHERE " + mCompaniesTable.latestName + " LIKE " +
-                    DatabaseUtils.sqlEscapeString("%" + filter + "%");
+            query += " WHERE " + getFilterSequence(filter);
         }
         Cursor cursor = database.rawQuery(query, null);
         int maxId = cursor.moveToFirst() ? cursor.getInt(0) : 0;
         cursor.close();
         return maxId;
+    }
+
+    public String getFilterSequence(String filter) {
+        if (!TextUtils.isEmpty(filter)) {
+            return mCompaniesTable.latestName + " LIKE " +
+                    DatabaseUtils.sqlEscapeString("%" + filter + "%") + " OR " +
+                    mCompaniesTable.id + " LIKE " + DatabaseUtils.sqlEscapeString("%" + filter + "%");
+        }
+        return "";
     }
 
     public Cursor getCompanies(String filter) {
@@ -249,8 +258,7 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
                 latestName + " " + sCompanyName + ", " + mCompaniesTable.previousNames +
                 " " + sCompanyPreviousNames + " FROM " + mCompaniesTable.name;
         if (!TextUtils.isEmpty(filter)) {
-            query += " WHERE " + mCompaniesTable.latestName + " LIKE " +
-                    DatabaseUtils.sqlEscapeString("%" + filter + "%");
+            query += " WHERE " + getFilterSequence(filter);
         }
         query += " ORDER BY " + mCompaniesTable.id;
         Cursor cursor = database.rawQuery(query, null);

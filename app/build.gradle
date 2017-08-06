@@ -79,4 +79,8 @@ dependencies {
     androidTestCompile 'org.mockito:mockito-android:2.7.22'
     testCompile 'junit:junit:4.12'
     testCompile 'org.mockito:mockito-core:2.7.22'
+
+    testCompile 'com.github.fabioCollini:DaggerMock:0.7.0'
+    //and/or
+    androidTestCompile 'com.github.fabioCollini:DaggerMock:0.7.0'
 }
