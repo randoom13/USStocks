@@ -315,9 +315,9 @@ public class CompaniesFragment extends
     }
 
     private class LoadCompaniesResult {
-        final Cursor cursor;
-        final Integer maxId;
-        final Boolean needUpdate;
+        public final Cursor cursor;
+        public final Integer maxId;
+        public final Boolean needUpdate;
 
         public LoadCompaniesResult(Cursor cursor, Integer maxId, boolean forceUpdateDatabase) {
             this.cursor = cursor;
