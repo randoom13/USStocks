@@ -53,6 +53,7 @@ public class CompaniesFragment extends
     @Inject
     protected AppPreferences mAppPreferences;
     private EditText mFilter;
+
     private TextView mEmptyRecordsList;
     private ProgressBar mProgress;
     private CompaniesCursorAdapter mAdapter;
@@ -187,6 +188,7 @@ public class CompaniesFragment extends
         App.getRequestComponent().inject(this);
         setHasOptionsMenu(true);
         View view = inflater.inflate(R.layout.companies_fragment, container, false);
+        initializeBar(view);
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recycler);
         setLayoutManager(new LinearLayoutManager(getActivity()));
         mProgress = (ProgressBar) view.findViewById(R.id.progress);

@@ -18,6 +18,7 @@ import io.reactivex.schedulers.Schedulers;
 
 
 public class MainActivity extends AppCompatActivity implements CompaniesFragment.Contract,
+        CompaniesDetailsFragment.Contract,
         TokenDialogFragment.TokenDialogListener {
     public static final String COMPANIES_TAG = "companies_tag";
     public static final String COMPANY_DETAILS_TAG = "company_details_tag";

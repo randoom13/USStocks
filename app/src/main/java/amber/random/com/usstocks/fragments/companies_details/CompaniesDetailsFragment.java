@@ -4,7 +4,6 @@ import android.database.Cursor;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
-import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -18,16 +17,18 @@ import javax.inject.Inject;
 
 import amber.random.com.usstocks.R;
 import amber.random.com.usstocks.database.DataBaseHelperProxy;
+import amber.random.com.usstocks.fragments.base.BaseContractFragment;
 import amber.random.com.usstocks.injection.App;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
-public class CompaniesDetailsFragment extends Fragment {
+public class CompaniesDetailsFragment extends BaseContractFragment<CompaniesDetailsFragment.Contract> {
     private static final String sFILTER = "filter";
     @Inject
     protected DataBaseHelperProxy mDataBaseHelper;
+
     private Disposable mDisposable;
 
     public static CompaniesDetailsFragment newInstance(String filter) {
@@ -50,6 +51,7 @@ public class CompaniesDetailsFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.main_company_details_fragment, container, false);
+        initializeBar(view);
         RecyclerViewPager pager = (RecyclerViewPager) view.findViewById(R.id.pager);
         pager.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
         TabLayout tabLayout = (TabLayout) view.findViewById(R.id.tabs);
@@ -75,5 +77,9 @@ public class CompaniesDetailsFragment extends Fragment {
                     }
                 });
         return view;
+    }
+
+    public interface Contract {
+
     }
 }
