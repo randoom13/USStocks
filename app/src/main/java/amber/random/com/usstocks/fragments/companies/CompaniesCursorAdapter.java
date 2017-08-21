@@ -26,6 +26,11 @@ public class CompaniesCursorAdapter extends BaseRecyclerCursorAdapter<CompanyHol
         return new CompanyHolder(inflater.inflate(R.layout.company_row, viewGroup, false), this);
     }
 
+    public void refreshSelection(CompanyHolder holder, boolean isSelected) {
+        if (holder.itemView.isActivated() != isSelected)
+            holder.itemView.setActivated(isSelected);
+    }
+
     @Override
     public void onBindViewHolder(CompanyHolder holder, int i) {
         mDataCursor.moveToPosition(i);

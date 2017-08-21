@@ -3,7 +3,6 @@ package amber.random.com.usstocks.fragments.base;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v7.widget.RecyclerView;
-import android.view.View;
 import android.view.ViewGroup;
 
 import java.lang.ref.WeakReference;
@@ -28,6 +27,8 @@ public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolde
 
     public abstract void onBindViewHolder(T holder, int i);
 
+    public abstract void refreshSelection(T holder, boolean isSelected);
+
     @Override
     public int getItemCount() {
         if (mDataCursor == null)
@@ -51,11 +52,9 @@ public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolde
         int position = holder.getAdapterPosition();
         mMaxVisibleIndex = Math.max(position, mMaxVisibleIndex);
         mMinVisibleIndex = Math.min(position, mMinVisibleIndex);
-        boolean isChecked = mSelectionInfoProxy.isSelected(position);
-        if (holder.itemView.isActivated() != isChecked)
-            holder.itemView.setActivated(isChecked);
+        boolean isSelected = mSelectionInfoProxy.isSelected(position);
+        refreshSelection(holder, isSelected);
     }
-
 
     public Observable<Boolean> launchSelectionDataSync(String filter) {
         return mSelectionInfoProxy.setFilter(filter);
@@ -113,11 +112,11 @@ public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolde
         for (int index = mMinVisibleIndex; index <= mMaxVisibleIndex; index++) {
             BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
             if (null != fragment) {
-                View view = fragment.getRecyclerView().getChildAt(index);
-                if (null != view) {
-                    boolean isChecked = mSelectionInfoProxy.isSelected(index);
-                    if (view.isActivated() != isChecked)
-                        view.setActivated(isChecked);
+                RecyclerView recyclerView = fragment.getRecyclerView();
+                RecyclerView.ViewHolder holder = recyclerView.getChildViewHolder(recyclerView.getChildAt(index));
+                if (null != holder) {
+                    boolean isSelected = mSelectionInfoProxy.isSelected(index);
+                    refreshSelection((T) holder, isSelected);
                 }
             }
         }
