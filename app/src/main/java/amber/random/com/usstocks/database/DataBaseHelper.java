@@ -23,10 +23,13 @@ import amber.random.com.usstocks.models.Indicator;
 import amber.random.com.usstocks.models.IndicatorInfo;
 
 public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperProxy {
+
     //region company table columns
-    public static final String sCompanyId = "company_id";
-    public static final String sCompanyName = "comany_name";
-    public static final String sCompanyPreviousNames = "company_old_names";
+
+    public static final String COMPANY_ID = "company_id";
+    public static final String COMPANY_NAME = "company_name";
+    public static final String COMPANY_PREVIOUS_NAMES = "company_old_names";
+
     //endregion company table columns
 
     private static final int sSchema = 1;
@@ -242,11 +245,18 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
         return maxId;
     }
 
-    public String getFilterSequence(String filter) {
+    private String getFilterSequence(String filter) {
         if (!TextUtils.isEmpty(filter)) {
-            return mCompaniesTable.latestName + " LIKE " +
-                    DatabaseUtils.sqlEscapeString("%" + filter + "%") + " OR " +
-                    mCompaniesTable.id + " LIKE " + DatabaseUtils.sqlEscapeString("%" + filter + "%");
+            StringBuilder builder = new StringBuilder();
+            builder.append(mCompaniesTable.latestName);
+            builder.append(" LIKE ");
+            String formattedFilter = DatabaseUtils.sqlEscapeString("%" + filter + "%");
+            builder.append(formattedFilter);
+            builder.append(" OR ");
+            builder.append(mCompaniesTable.id);
+            builder.append(" LIKE ");
+            builder.append(formattedFilter);
+            return builder.toString();
         }
         return "";
     }
@@ -254,9 +264,9 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
     public Cursor getCompanies(String filter) {
         SQLiteDatabase database = getReadableDatabase();
         String latestName = mCompaniesTable.latestName;
-        String query = "SELECT rowid _id, " + mCompaniesTable.id + " " + sCompanyId + ", " +
-                latestName + " " + sCompanyName + ", " + mCompaniesTable.previousNames +
-                " " + sCompanyPreviousNames + " FROM " + mCompaniesTable.name;
+        String query = "SELECT rowid _id, " + mCompaniesTable.id + " " + COMPANY_ID + ", " +
+                latestName + " " + COMPANY_NAME + ", " + mCompaniesTable.previousNames +
+                " " + COMPANY_PREVIOUS_NAMES + " FROM " + mCompaniesTable.name;
         if (!TextUtils.isEmpty(filter)) {
             query += " WHERE " + getFilterSequence(filter);
         }

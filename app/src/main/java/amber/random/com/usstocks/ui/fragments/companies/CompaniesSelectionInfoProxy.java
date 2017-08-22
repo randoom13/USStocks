@@ -1,4 +1,4 @@
-package amber.random.com.usstocks.fragments.companies;
+package amber.random.com.usstocks.ui.fragments.companies;
 
 import android.support.v4.os.CancellationSignal;
 
@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import amber.random.com.usstocks.database.DataBaseHelperProxy;
-import amber.random.com.usstocks.fragments.base.BaseSelectionInfoProxy;
 import amber.random.com.usstocks.injection.App;
+import amber.random.com.usstocks.ui.fragments.base.BaseSelectionInfoProxy;
 
 public class CompaniesSelectionInfoProxy extends BaseSelectionInfoProxy {
     public CompaniesSelectionInfoProxy(int maxCacheSize) {

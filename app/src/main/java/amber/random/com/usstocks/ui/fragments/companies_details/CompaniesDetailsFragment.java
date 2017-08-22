@@ -1,4 +1,4 @@
-package amber.random.com.usstocks.fragments.companies_details;
+package amber.random.com.usstocks.ui.fragments.companies_details;
 
 import android.database.Cursor;
 import android.os.Bundle;
@@ -17,8 +17,8 @@ import javax.inject.Inject;
 
 import amber.random.com.usstocks.R;
 import amber.random.com.usstocks.database.DataBaseHelperProxy;
-import amber.random.com.usstocks.fragments.base.BaseContractFragment;
 import amber.random.com.usstocks.injection.App;
+import amber.random.com.usstocks.ui.fragments.base.BaseContractFragment;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;

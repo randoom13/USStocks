@@ -1,4 +1,4 @@
-package amber.random.com.usstocks.fragments.base;
+package amber.random.com.usstocks.ui.fragments.base;
 
 public interface SelectableAdapter {
     void setSelected(int position, boolean isSelected);

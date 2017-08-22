@@ -1,4 +1,4 @@
-package amber.random.com.usstocks.fragments;
+package amber.random.com.usstocks.ui.fragments;
 
 import android.app.Dialog;
 import android.content.DialogInterface;

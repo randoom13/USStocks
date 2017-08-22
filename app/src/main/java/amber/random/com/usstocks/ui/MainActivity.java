@@ -1,4 +1,4 @@
-package amber.random.com.usstocks;
+package amber.random.com.usstocks.ui;
 
 
 import android.os.Bundle;
@@ -7,11 +7,13 @@ import android.support.v7.app.AppCompatActivity;
 
 import javax.inject.Inject;
 
-import amber.random.com.usstocks.fragments.TokenDialogFragment;
-import amber.random.com.usstocks.fragments.companies.CompaniesFragment;
-import amber.random.com.usstocks.fragments.companies_details.CompaniesDetailsFragment;
+import amber.random.com.usstocks.BuildConfig;
+import amber.random.com.usstocks.R;
 import amber.random.com.usstocks.injection.App;
 import amber.random.com.usstocks.preference.AppPreferences;
+import amber.random.com.usstocks.ui.fragments.TokenDialogFragment;
+import amber.random.com.usstocks.ui.fragments.companies.CompaniesFragment;
+import amber.random.com.usstocks.ui.fragments.companies_details.CompaniesDetailsFragment;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;

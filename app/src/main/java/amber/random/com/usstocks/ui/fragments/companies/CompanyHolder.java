@@ -1,4 +1,4 @@
-package amber.random.com.usstocks.fragments.companies;
+package amber.random.com.usstocks.ui.fragments.companies;
 
 import android.annotation.TargetApi;
 import android.database.Cursor;
@@ -12,7 +12,7 @@ import java.lang.ref.WeakReference;
 
 import amber.random.com.usstocks.R;
 import amber.random.com.usstocks.database.DataBaseHelper;
-import amber.random.com.usstocks.fragments.base.SelectableAdapter;
+import amber.random.com.usstocks.ui.fragments.base.SelectableAdapter;
 
 
 public class CompanyHolder extends RecyclerView.ViewHolder implements View.OnClickListener,
@@ -47,26 +47,35 @@ public class CompanyHolder extends RecyclerView.ViewHolder implements View.OnCli
     public boolean onLongClick(View v) {
         SelectableAdapter adapter = mAdapterWR.get();
         boolean result = null != adapter && adapter.isLongClick(getAdapterPosition());
-        if (result)
-            itemView.setActivated(true);
+        setSelection(result, false);
         return result;
+    }
+
+    public void setSelection(boolean isSelected, boolean force) {
+        if (force || itemView.isActivated() != isSelected)
+            itemView.setActivated(isSelected);
+    }
+
+    public boolean isSelected() {
+        return itemView.isActivated();
     }
 
     @Override
     public void onClick(View v) {
-        boolean isChecked = !itemView.isActivated();
+        boolean isChecked = !isSelected();
         SelectableAdapter adapter = mAdapterWR.get();
-        if (null != adapter)
+        if (null != adapter) {
             adapter.setSelected(getAdapterPosition(), isChecked);
-        itemView.setActivated(isChecked);
+            setSelection(isChecked, true);
+        }
     }
 
     void bindModel(Cursor cursor, String maxIdFormat) {
-        String id = cursor.getString(cursor.getColumnIndex(DataBaseHelper.sCompanyId));
+        String id = cursor.getString(cursor.getColumnIndex(DataBaseHelper.COMPANY_ID));
         companyId.setText(id);
         float maxWidth = companyId.getPaint().measureText(maxIdFormat);
         companyId.setWidth((int) maxWidth);
-        String name = cursor.getString(cursor.getColumnIndex(DataBaseHelper.sCompanyName));
+        String name = cursor.getString(cursor.getColumnIndex(DataBaseHelper.COMPANY_NAME));
         companyName.setText(name);
     }
 }

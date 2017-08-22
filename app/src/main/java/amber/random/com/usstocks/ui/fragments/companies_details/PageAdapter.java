@@ -1,4 +1,4 @@
-package amber.random.com.usstocks.fragments.companies_details;
+package amber.random.com.usstocks.ui.fragments.companies_details;
 
 import android.database.Cursor;
 import android.view.LayoutInflater;

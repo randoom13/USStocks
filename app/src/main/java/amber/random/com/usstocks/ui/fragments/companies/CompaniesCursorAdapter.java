@@ -1,14 +1,14 @@
-package amber.random.com.usstocks.fragments.companies;
+package amber.random.com.usstocks.ui.fragments.companies;
 
 import android.database.Cursor;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
 import amber.random.com.usstocks.R;
-import amber.random.com.usstocks.fragments.base.BaseRecyclerCursorAdapter;
-import amber.random.com.usstocks.fragments.base.BaseRecyclerFragment;
+import amber.random.com.usstocks.ui.fragments.base.BaseRecyclerCursorAdapterv2;
+import amber.random.com.usstocks.ui.fragments.base.BaseRecyclerFragment;
 
-public class CompaniesCursorAdapter extends BaseRecyclerCursorAdapter<CompanyHolder> {
+public class CompaniesCursorAdapter extends BaseRecyclerCursorAdapterv2<CompanyHolder> {
     private String mMaxId;
 
     public CompaniesCursorAdapter(BaseRecyclerFragment activity) {
@@ -18,17 +18,17 @@ public class CompaniesCursorAdapter extends BaseRecyclerCursorAdapter<CompanyHol
     }
 
     @Override
+    protected void refreshSelectedItem(CompanyHolder holder, boolean isSelected) {
+        holder.setSelection(isSelected, false);
+    }
+
+    @Override
     public CompanyHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
         BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
         if (null == fragment)
             return null;
         LayoutInflater inflater = LayoutInflater.from(fragment.getActivity());
         return new CompanyHolder(inflater.inflate(R.layout.company_row, viewGroup, false), this);
-    }
-
-    public void refreshSelection(CompanyHolder holder, boolean isSelected) {
-        if (holder.itemView.isActivated() != isSelected)
-            holder.itemView.setActivated(isSelected);
     }
 
     @Override

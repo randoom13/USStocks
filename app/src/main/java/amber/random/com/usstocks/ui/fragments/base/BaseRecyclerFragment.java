@@ -1,4 +1,4 @@
-package amber.random.com.usstocks.fragments.base;
+package amber.random.com.usstocks.ui.fragments.base;
 
 import android.support.v7.widget.RecyclerView;
 
@@ -11,6 +11,10 @@ public class BaseRecyclerFragment<T> extends BaseContractFragment<T> {
 
     public void setAdapter(RecyclerView.Adapter adapter) {
         mRecyclerView.setAdapter(adapter);
+    }
+
+    public RecyclerView.LayoutManager getLayoutManager() {
+        return mRecyclerView.getLayoutManager();
     }
 
     public void setLayoutManager(RecyclerView.LayoutManager layoutManager) {

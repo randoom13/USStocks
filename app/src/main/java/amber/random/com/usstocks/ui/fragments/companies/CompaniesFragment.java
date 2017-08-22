@@ -1,4 +1,4 @@
-package amber.random.com.usstocks.fragments.companies;
+package amber.random.com.usstocks.ui.fragments.companies;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -7,6 +7,7 @@ import android.content.IntentFilter;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBar;
@@ -32,11 +33,11 @@ import amber.random.com.usstocks.R;
 import amber.random.com.usstocks.database.DataBaseHelperProxy;
 import amber.random.com.usstocks.exceptions.NoConnectionException;
 import amber.random.com.usstocks.exceptions.UpdateFailedException;
-import amber.random.com.usstocks.fragments.TokenDialogFragment;
-import amber.random.com.usstocks.fragments.base.BaseRecyclerFragment;
 import amber.random.com.usstocks.injection.App;
 import amber.random.com.usstocks.preference.AppPreferences;
 import amber.random.com.usstocks.service.UpdateDatabaseService;
+import amber.random.com.usstocks.ui.fragments.TokenDialogFragment;
+import amber.random.com.usstocks.ui.fragments.base.BaseRecyclerFragment;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
@@ -160,7 +161,6 @@ public class CompaniesFragment extends
                 resetMultiSelect();
                 return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
@@ -175,8 +175,6 @@ public class CompaniesFragment extends
                     if (Boolean.TRUE.equals(res))
                         mContract.showDetails(filter);
                 });
-
-
     }
 
     private void resetMultiSelect() {
@@ -184,10 +182,10 @@ public class CompaniesFragment extends
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         App.getRequestComponent().inject(this);
         setHasOptionsMenu(true);
-        View view = inflater.inflate(R.layout.companies_fragment, container, false);
         initializeBar(view);
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recycler);
         setLayoutManager(new LinearLayoutManager(getActivity()));
@@ -225,7 +223,11 @@ public class CompaniesFragment extends
         else mFilter.setText(savedInstanceState.getCharSequence(sStateQuery));
 
         updateMultiSelectTitle();
+    }
 
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.companies_fragment, container, false);
         return view;
     }
 
@@ -259,14 +261,12 @@ public class CompaniesFragment extends
         getActivity().startService(intent);
     }
 
-
     private void failedLoadCompanies() {
         mProgress.setVisibility(View.GONE);
         mEmptyRecordsList.setVisibility(View.GONE);
         Snackbar snackbar = Snackbar.make(getRecyclerView(), R.string.failed_update_companies, Snackbar.LENGTH_LONG);
         snackbar.show();
     }
-
 
     private void loadCompaniesList(boolean forceUpdateDatabase) {
         disposeDisposable();
