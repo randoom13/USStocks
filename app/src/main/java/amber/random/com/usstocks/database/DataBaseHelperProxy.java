@@ -10,6 +10,14 @@ import amber.random.com.usstocks.models.Indicator;
 
 public interface DataBaseHelperProxy {
 
+    //region company table columns
+
+    String COMPANY_ID = "company_id";
+    String COMPANY_NAME = "company_name";
+    String COMPANY_PREVIOUS_NAMES = "company_old_names";
+
+    //endregion company table columns
+
     Cursor getSelectedCompanies(String filter);
 
     Cursor getCompaniesCheckedState(String filter);

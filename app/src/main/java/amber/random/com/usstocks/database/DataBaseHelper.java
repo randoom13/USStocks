@@ -23,15 +23,6 @@ import amber.random.com.usstocks.models.Indicator;
 import amber.random.com.usstocks.models.IndicatorInfo;
 
 public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperProxy {
-
-    //region company table columns
-
-    public static final String COMPANY_ID = "company_id";
-    public static final String COMPANY_NAME = "company_name";
-    public static final String COMPANY_PREVIOUS_NAMES = "company_old_names";
-
-    //endregion company table columns
-
     private static final int sSchema = 1;
     private static final String sDatabaseName = "us_stocks";
     private CompaniesTable mCompaniesTable = new CompaniesTable();
@@ -82,8 +73,8 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
 
             query = "SELECT " + mSelectedCompaniesTable.id + " FROM " +
                     mSelectedCompaniesTable.name + " INNER JOIN (" +
-                    query + " ) ON " + mSelectedCompaniesTable.id
-                    + " = " + mCompaniesTable.id;
+                    query + " ) ON cast(" + mSelectedCompaniesTable.id
+                    + " AS TEXT) = " + mCompaniesTable.id;
         }
 
         Cursor cursor = database.rawQuery(query, null);
@@ -93,14 +84,14 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
 
     public Cursor getCompaniesCheckedState(String filter) {
         SQLiteDatabase database = getReadableDatabase();
-        String query = "SELECT " + mCompaniesTable.id +
-                ", (SELECT 1 FROM " + mSelectedCompaniesTable.name + " WHERE " +
-                mSelectedCompaniesTable.id + " = " + mCompaniesTable.id + " LIMIT 1) " +
+        String query = "SELECT cast(" + mCompaniesTable.id +
+                " AS INTEGER ), (SELECT 1 FROM " + mSelectedCompaniesTable.name + " WHERE " +
+                mSelectedCompaniesTable.id + " = cast(" + mCompaniesTable.id + " AS INTEGER) LIMIT 1) " +
                 " FROM " + mCompaniesTable.name;
         if (!TextUtils.isEmpty(filter)) {
             query += " WHERE " + getFilterSequence(filter);
         }
-        query += " ORDER BY " + mCompaniesTable.id;
+        query += " ORDER BY cast(" + mCompaniesTable.id + " AS INTEGER)";
         Cursor cursor = database.rawQuery(query, null);
         return cursor;
     }
@@ -137,7 +128,7 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
         StringBuilder builder = new StringBuilder();
         builder.append(positiveTable);
         if (positiveTable.length() > 0 && negativeTable.length() > 0)
-            builder.append(" UNION ");
+            builder.append(" UNION ALL ");
         builder.append(negativeTable);
         Cursor cursor = database.rawQuery(builder.toString(), null);
         final Integer isChecked = 1;
@@ -158,9 +149,9 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
             if (hasFilter) {
                 sql += " WHERE " + mSelectedCompaniesTable.id +
                         " IN ( ";
-                sql += "SELECT " + mCompaniesTable.id + " FROM " +
+                sql += "SELECT cast(" + mCompaniesTable.id + " AS INTEGER) FROM " +
                         mCompaniesTable.name;
-                sql += " WHERE " + getFilterSequence(filter);
+                sql += " WHERE " + getFilterSequence(filter) + ")";
             }
             database.execSQL(sql);
             database.setTransactionSuccessful();
@@ -179,7 +170,7 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
                 if (cache.getValue()) {
                     ContentValues values = new ContentValues();
                     values.put(mSelectedCompaniesTable.id, id);
-                    database.replace(mSelectedCompaniesTable.name,
+                    database.replaceOrThrow(mSelectedCompaniesTable.name,
                             null, values);
                 } else database.delete(mSelectedCompaniesTable.name,
                         mSelectedCompaniesTable.id + "=" + id, null);
@@ -194,19 +185,21 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
         SQLiteDatabase database = getWritableDatabase();
         database.beginTransaction();
         try {
+            database.delete(mAllIndicatorsTable.name, null, null);
+            database.delete(mIndicatorsDataTable.name, null, null);
             for (Indicator indicator : companies) {
                 ContentValues values;
                 values = new ContentValues();
                 values.put(mAllIndicatorsTable.total, indicator.Total);
                 values.put(mAllIndicatorsTable.id, indicator.id);
-                database.replaceOrThrow(mAllIndicatorsTable.name, null, values);
+                database.insertOrThrow(mAllIndicatorsTable.name, null, values);
 
                 for (IndicatorInfo info : indicator.infos) {
                     values = new ContentValues();
                     values.put(mIndicatorsDataTable.indicatorValue, info.value);
                     values.put(mIndicatorsDataTable.indicatorYear, info.year);
                     values.put(mIndicatorsDataTable.id, indicator.id);
-                    database.replaceOrThrow(mIndicatorsDataTable.name, null, values);
+                    database.insertOrThrow(mIndicatorsDataTable.name, null, values);
                 }
             }
             database.setTransactionSuccessful();
@@ -219,6 +212,7 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
         SQLiteDatabase database = getWritableDatabase();
         database.beginTransaction();
         try {
+            database.delete(mCompaniesTable.name, null, null);
             for (Company company : companies) {
                 ContentValues values = new ContentValues();
                 values.put(mCompaniesTable.latestName, company.latestName());
@@ -234,7 +228,7 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
 
     public int getMaxId(String filter) {
         SQLiteDatabase database = getReadableDatabase();
-        String query = "SELECT MAX(" + mCompaniesTable.id + ") FROM "
+        String query = "SELECT MAX( cast(" + mCompaniesTable.id + " AS INTEGER) ) FROM "
                 + mCompaniesTable.name;
         if (!TextUtils.isEmpty(filter)) {
             query += " WHERE " + getFilterSequence(filter);
@@ -247,30 +241,23 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
 
     private String getFilterSequence(String filter) {
         if (!TextUtils.isEmpty(filter)) {
-            StringBuilder builder = new StringBuilder();
-            builder.append(mCompaniesTable.latestName);
-            builder.append(" LIKE ");
-            String formattedFilter = DatabaseUtils.sqlEscapeString("%" + filter + "%");
-            builder.append(formattedFilter);
-            builder.append(" OR ");
-            builder.append(mCompaniesTable.id);
-            builder.append(" LIKE ");
-            builder.append(formattedFilter);
-            return builder.toString();
+            return mCompaniesTable.name + " match " + DatabaseUtils.sqlEscapeString(filter + "*");
         }
         return "";
     }
 
     public Cursor getCompanies(String filter) {
         SQLiteDatabase database = getReadableDatabase();
-        String latestName = mCompaniesTable.latestName;
-        String query = "SELECT rowid _id, " + mCompaniesTable.id + " " + COMPANY_ID + ", " +
-                latestName + " " + COMPANY_NAME + ", " + mCompaniesTable.previousNames +
-                " " + COMPANY_PREVIOUS_NAMES + " FROM " + mCompaniesTable.name;
+        String query = "";
         if (!TextUtils.isEmpty(filter)) {
-            query += " WHERE " + getFilterSequence(filter);
-        }
-        query += " ORDER BY " + mCompaniesTable.id;
+            query = "SELECT rowid _id, snippet(" + mCompaniesTable.name + ",'<b>','</b>','<b>...</b>',0) " + COMPANY_ID +
+                    ", snippet(" + mCompaniesTable.name + ",'<b>','</b>','<b>...</b>',1) " + COMPANY_NAME + ", " +
+                    mCompaniesTable.previousNames +
+                    " " + COMPANY_PREVIOUS_NAMES + " FROM " + mCompaniesTable.name + " WHERE " + getFilterSequence(filter);
+        } else query = "SELECT rowid _id, " + mCompaniesTable.id + " " + COMPANY_ID + ", " +
+                mCompaniesTable.latestName + " " + COMPANY_NAME + ", " + mCompaniesTable.previousNames +
+                " " + COMPANY_PREVIOUS_NAMES + " FROM " + mCompaniesTable.name;
+        query += " ORDER BY cast( " + mCompaniesTable.id + " AS INTEGER)";
         Cursor cursor = database.rawQuery(query, null);
         return cursor;
     }

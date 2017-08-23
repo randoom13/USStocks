@@ -203,9 +203,9 @@ public abstract class BaseSelectionInfoProxy {
             return true;
         })
                 .onErrorReturn(ex -> {
+                    Log.e(getClass().getSimpleName(), "Failed to sync selected companies for filter =" + filter, ex);
                             if (!cancellation.isCanceled())
                                 resetSync();
-                            Log.e(getClass().getSimpleName(), "Failed to sync selected companies for filter =" + filter, ex);
                             if (!(ex instanceof SQLException))
                                 throw (Exception) ex;
 

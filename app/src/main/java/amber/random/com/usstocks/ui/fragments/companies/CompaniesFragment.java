@@ -133,6 +133,7 @@ public class CompaniesFragment extends
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
         ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
+        menu.clear();
         if (!mAdapter.isMultiSelectMode()) {
             inflater.inflate(R.menu.companies_menu, menu);
             actionBar.setTitle(R.string.app_name);

@@ -19,7 +19,7 @@ public class CompaniesCursorAdapter extends BaseRecyclerCursorAdapterv2<CompanyH
 
     @Override
     protected void refreshSelectedItem(CompanyHolder holder, boolean isSelected) {
-        holder.setSelection(isSelected, false);
+        holder.setSelection(isSelected);
     }
 
     @Override

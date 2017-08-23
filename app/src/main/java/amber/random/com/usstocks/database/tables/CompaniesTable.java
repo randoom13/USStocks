@@ -7,10 +7,8 @@ public class CompaniesTable {
     public final String previousNames = "names_previous";
     public final String createScript;
 
-    //Unfortunately, REPLACE works "wrong" in virtual table. It always insert new row.
-    //"CREATE VIRTUAL TABLE %s USING fts3("
     public CompaniesTable() {
-        createScript = String.format("CREATE TABLE %s("
+        createScript = String.format("CREATE VIRTUAL TABLE %s USING fts3("
                 + "%s INTEGER NOT NULL PRIMARY KEY," +
                 "%s TEXT NOT NULL, %s TEXT)", name, id, latestName, previousNames);
     }
