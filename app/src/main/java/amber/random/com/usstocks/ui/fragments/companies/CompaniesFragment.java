@@ -121,12 +121,17 @@ public class CompaniesFragment extends
         mAdapter.onSaveInstanceState(outState);
     }
 
-    private void updateMultiSelectTitle() {
+    private void updateOptionsMenu() {
         if (mAdapter.isMultiSelectMode()) {
             if (null == mToolbar)
                 initializeBar(getView());
+
+            int selectedCount = mAdapter.getSelectedCount();
             mToolbar.setTitle(String.format("MultiSelect (%d/%d)",
-                    mAdapter.getSelectedCount(), mAdapter.getItemCount()));
+                    selectedCount, mAdapter.getItemCount()));
+            MenuItem item = mToolbar.getMenu().findItem(R.id.show_companies_details);
+            if (null != item)
+                item.setEnabled(selectedCount > 0);
         }
     }
 
@@ -144,7 +149,7 @@ public class CompaniesFragment extends
             mToolbar.inflateMenu(R.menu.multiselect_companies_menu);
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
-        updateMultiSelectTitle();
+        updateOptionsMenu();
     }
 
     @Override
@@ -216,7 +221,7 @@ public class CompaniesFragment extends
         mAdapter = new CompaniesCursorAdapter(this);
         mAdapter.onRestoreInstanceState(savedInstanceState);
         mAdapter.addSelectionChangedListener(() -> {
-                    updateMultiSelectTitle();
+            updateOptionsMenu();
                     if (!mAdapter.isMultiSelectMode()) {
                         showDetails();
                     }
@@ -227,7 +232,7 @@ public class CompaniesFragment extends
             loadCompaniesList(true);
         else mFilter.setText(savedInstanceState.getCharSequence(sStateQuery));
 
-        updateMultiSelectTitle();
+        updateOptionsMenu();
     }
 
     @Override
@@ -304,7 +309,7 @@ public class CompaniesFragment extends
                     mAdapter.updateCursor(res.cursor, res.companiesMaxId.toString());
                     boolean showEmptyRecordsList = res.cursor.getCount() == 0;
                     mEmptyRecordsList.setVisibility(showEmptyRecordsList ? View.VISIBLE : View.GONE);
-                    updateMultiSelectTitle();
+                    updateOptionsMenu();
                 }, ex -> {
                     Log.e(this.getClass().getSimpleName(), "Failed to load companies for filter = " + filter, ex);
                     if (!(ex instanceof SQLException))
