@@ -123,8 +123,9 @@ public class CompaniesFragment extends
 
     private void updateMultiSelectTitle() {
         if (mAdapter.isMultiSelectMode()) {
-            ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
-            actionBar.setTitle(String.format("MultiSelect (%d/%d)",
+            if (null == mToolbar)
+                initializeBar(getView());
+            mToolbar.setTitle(String.format("MultiSelect (%d/%d)",
                     mAdapter.getSelectedCount(), mAdapter.getItemCount()));
         }
     }
@@ -132,14 +133,15 @@ public class CompaniesFragment extends
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
+        if (null == mToolbar)
+            initializeBar(getView());
         ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
-        menu.clear();
         if (!mAdapter.isMultiSelectMode()) {
-            inflater.inflate(R.menu.companies_menu, menu);
-            actionBar.setTitle(R.string.app_name);
+            mToolbar.inflateMenu(R.menu.companies_menu);
+            mToolbar.setTitle(R.string.app_name);
             actionBar.setDisplayHomeAsUpEnabled(false);
         } else {
-            inflater.inflate(R.menu.multiselect_companies_menu, menu);
+            mToolbar.inflateMenu(R.menu.multiselect_companies_menu);
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
         updateMultiSelectTitle();
@@ -173,8 +175,10 @@ public class CompaniesFragment extends
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(res -> {
-                    if (Boolean.TRUE.equals(res))
+                    if (Boolean.TRUE.equals(res)) {
                         mContract.showDetails(filter);
+                        mToolbar = null;
+                    }
                 });
     }
 
@@ -186,8 +190,8 @@ public class CompaniesFragment extends
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         App.getRequestComponent().inject(this);
-        setHasOptionsMenu(true);
         initializeBar(view);
+        setHasOptionsMenu(true);
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recycler);
         setLayoutManager(new LinearLayoutManager(getActivity()));
         mProgress = (ProgressBar) view.findViewById(R.id.progress);
@@ -274,7 +278,7 @@ public class CompaniesFragment extends
         String filter = mFilter.getText().toString();
         Observable<LoadCompaniesResult> loadCompaniesObservable = Observable.fromCallable(() ->
         {
-            Integer maxId = mDataBaseHelper.getMaxId(filter);
+            Integer maxId = mDataBaseHelper.getCompaniesMaxId(filter);
             Cursor cursor = mDataBaseHelper.getCompanies(filter);
             LoadCompaniesResult result = new LoadCompaniesResult(cursor, maxId, forceUpdateDatabase);
             return result;
@@ -297,7 +301,7 @@ public class CompaniesFragment extends
                     }
 
                     mProgress.setVisibility(View.GONE);
-                    mAdapter.updateCursor(res.cursor, res.maxId.toString());
+                    mAdapter.updateCursor(res.cursor, res.companiesMaxId.toString());
                     boolean showEmptyRecordsList = res.cursor.getCount() == 0;
                     mEmptyRecordsList.setVisibility(showEmptyRecordsList ? View.VISIBLE : View.GONE);
                     updateMultiSelectTitle();
@@ -319,12 +323,12 @@ public class CompaniesFragment extends
 
     private class LoadCompaniesResult {
         public final Cursor cursor;
-        public final Integer maxId;
+        public final Integer companiesMaxId;
         public final Boolean needUpdate;
 
-        public LoadCompaniesResult(Cursor cursor, Integer maxId, boolean forceUpdateDatabase) {
+        public LoadCompaniesResult(Cursor cursor, Integer companiesMaxId, boolean forceUpdateDatabase) {
             this.cursor = cursor;
-            this.maxId = maxId;
+            this.companiesMaxId = companiesMaxId;
             // Anyway, operation cursor.getCount() executes on main thread
             // when cursor move to any position and this first launch "eats" resources
             // To avoid slowing the main thread execute this operation on background

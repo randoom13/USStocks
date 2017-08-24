@@ -11,10 +11,13 @@ import java.lang.ref.WeakReference;
 
 import io.reactivex.Observable;
 
+import static amber.random.com.usstocks.ui.fragments.base.SelectionInfoProxyCapable.CHOICE_MODE_MULTIPLE;
+import static amber.random.com.usstocks.ui.fragments.base.SelectionInfoProxyCapable.CHOICE_MODE_SINGLE;
+
 public abstract class BaseRecyclerCursorAdapterv2<T extends RecyclerView.ViewHolder>
-        extends RecyclerView.Adapter<T> implements SelectableAdapter {
+        extends RecyclerView.Adapter<T> implements SelectableAdapter<T> {
     protected final WeakReference<BaseRecyclerFragment> mRecyclerFragmentWR;
-    protected BaseSelectionInfoProxy mSelectionInfoProxy;
+    protected SelectionInfoProxyCapable mSelectionInfoProxy;
     protected Cursor mDataCursor;
     private listener mSelectionChangedListener;
 
@@ -40,8 +43,8 @@ public abstract class BaseRecyclerCursorAdapterv2<T extends RecyclerView.ViewHol
     public void onViewAttachedToWindow(T holder) {
         super.onViewAttachedToWindow(holder);
         int position = holder.getAdapterPosition();
-        boolean isChecked = mSelectionInfoProxy.isSelected(position);
-        refreshSelectedItem(holder, isChecked);
+        boolean isSelected = mSelectionInfoProxy.isSelected(position);
+        refreshSelectedItem(holder, isSelected);
     }
 
 
@@ -62,32 +65,35 @@ public abstract class BaseRecyclerCursorAdapterv2<T extends RecyclerView.ViewHol
 
     @Override
     public boolean isMultiSelectMode() {
-        return mSelectionInfoProxy.getMode() == BaseSelectionInfoProxy.CHOICE_MODE_MULTIPLE;
+        return mSelectionInfoProxy.getMode() == CHOICE_MODE_MULTIPLE;
     }
 
     @Override
     public void closeMultiSelectMode() {
-        mSelectionInfoProxy.setMode(BaseSelectionInfoProxy.CHOICE_MODE_SINGLE);
+        mSelectionInfoProxy.setMode(CHOICE_MODE_SINGLE);
         BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
         if (null != fragment)
             fragment.getActivity().invalidateOptionsMenu();
     }
 
     @Override
-    public boolean isLongClick(int position) {
-        mSelectionInfoProxy.setMode(BaseSelectionInfoProxy.CHOICE_MODE_MULTIPLE);
+    public boolean isLongClick(T holder, int position) {
+        mSelectionInfoProxy.setMode(CHOICE_MODE_MULTIPLE);
         BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
+        setSelected(holder, position, !mSelectionInfoProxy.isSelected(position));
         if (null != fragment)
             mRecyclerFragmentWR.get().getActivity().invalidateOptionsMenu();
-        setSelected(position, true);
         return true;
     }
 
     @Override
-    public void setSelected(int position, boolean isSelected) {
+    public void setSelected(T holder, int position, boolean isSelected) {
         mSelectionInfoProxy.setSelection(position, isSelected);
         if (!isMultiSelectMode())
             updateVisibleItemsSelection();
+        else {
+            refreshSelectedItem(holder, isSelected);
+        }
         if (mSelectionChangedListener != null)
             mSelectionChangedListener.callback();
     }
@@ -101,20 +107,27 @@ public abstract class BaseRecyclerCursorAdapterv2<T extends RecyclerView.ViewHol
         int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
         int lastVisibleItem = layoutManager.findLastVisibleItemPosition();
 
-        int minVisibleIndex = Math.min(firstVisibleItem, lastVisibleItem);
-        int maxVisibleIndex = Math.max(firstVisibleItem, lastVisibleItem);
-        for (int index = minVisibleIndex; index <= maxVisibleIndex; index++) {
-
-            RecyclerView recyclerView = fragment.getRecyclerView();
-            View view = recyclerView.getChildAt(index);
-            if (null == view) continue;
-
-            RecyclerView.ViewHolder holder = recyclerView.getChildViewHolder(view);
-            if (null == holder) continue;
-
-            boolean isSelected = mSelectionInfoProxy.isSelected(index);
-            refreshSelectedItem((T) holder, isSelected);
+        for (int index = Math.min(firstVisibleItem, lastVisibleItem);
+             index <= Math.max(firstVisibleItem, lastVisibleItem); index++) {
+            T holder = getHolder(index);
+            if (null != holder) {
+                boolean isSelected = mSelectionInfoProxy.isSelected(index);
+                refreshSelectedItem((T) holder, isSelected);
+            }
         }
+    }
+
+    private T getHolder(int position) {
+        BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
+        if (null == fragment)
+            return null;
+
+        View view = fragment.getRecyclerView().getChildAt(position);
+        if (null == view)
+            return null;
+
+        T holder = (T) view.getTag();
+        return holder;
     }
 
     @Override
@@ -147,7 +160,7 @@ public abstract class BaseRecyclerCursorAdapterv2<T extends RecyclerView.ViewHol
     public void updateCursor(Cursor dataCursor) {
         Cursor oldCursor = mDataCursor;
         mDataCursor = dataCursor;
-        this.notifyDataSetChanged();
+        notifyDataSetChanged();
         if (oldCursor != null)
             oldCursor.close();
     }

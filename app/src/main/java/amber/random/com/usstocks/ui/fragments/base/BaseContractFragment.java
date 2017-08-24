@@ -13,7 +13,7 @@ import amber.random.com.usstocks.R;
 public class BaseContractFragment<T> extends Fragment {
 
     protected T mContract;
-    private Toolbar mToolbar;
+    protected Toolbar mToolbar;
 
     protected void initializeBar(View view) {
         mToolbar = (Toolbar) view.findViewById(R.id.toolbar);

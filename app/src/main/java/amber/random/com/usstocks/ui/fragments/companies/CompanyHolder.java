@@ -48,9 +48,9 @@ public class CompanyHolder extends RecyclerView.ViewHolder implements View.OnCli
     @Override
     public boolean onLongClick(View v) {
         SelectableAdapter adapter = mAdapterWR.get();
-        boolean result = null != adapter && adapter.isLongClick(getAdapterPosition());
-        setSelection(result);
-        return result;
+        if (null == adapter)
+            return false;
+        return adapter.isLongClick(this, getAdapterPosition());
     }
 
     public void setSelection(boolean isSelected) {
@@ -66,8 +66,7 @@ public class CompanyHolder extends RecyclerView.ViewHolder implements View.OnCli
         boolean isChecked = !isSelected();
         SelectableAdapter adapter = mAdapterWR.get();
         if (null != adapter) {
-            adapter.setSelected(getAdapterPosition(), isChecked);
-            setSelection(isChecked);
+            adapter.setSelected(this, getAdapterPosition(), isChecked);
         }
     }
 

@@ -9,7 +9,7 @@ import amber.random.com.usstocks.ui.fragments.base.BaseRecyclerCursorAdapterv2;
 import amber.random.com.usstocks.ui.fragments.base.BaseRecyclerFragment;
 
 public class CompaniesCursorAdapter extends BaseRecyclerCursorAdapterv2<CompanyHolder> {
-    private String mMaxId;
+    private String mCompaniesMaxId;
 
     public CompaniesCursorAdapter(BaseRecyclerFragment activity) {
         super(activity);
@@ -32,13 +32,14 @@ public class CompaniesCursorAdapter extends BaseRecyclerCursorAdapterv2<CompanyH
     }
 
     @Override
-    public void onBindViewHolder(CompanyHolder holder, int i) {
-        mDataCursor.moveToPosition(i);
-        holder.bindModel(mDataCursor, mMaxId);
+    public void onBindViewHolder(CompanyHolder holder, int position) {
+        mDataCursor.moveToPosition(position);
+        holder.bindModel(mDataCursor, mCompaniesMaxId);
+        holder.itemView.setTag(holder);
     }
 
-    public void updateCursor(Cursor dataCursor, String maxId) {
-        this.mMaxId = maxId;
+    public void updateCursor(Cursor dataCursor, String companiesMaxId) {
+        this.mCompaniesMaxId = companiesMaxId;
         super.updateCursor(dataCursor);
     }
 }

@@ -20,15 +20,13 @@ public interface DataBaseHelperProxy {
 
     Cursor getSelectedCompanies(String filter);
 
-    Cursor getCompaniesCheckedState(String filter);
-
-    Map<Integer, Boolean> getCheckCompaniesById(Map<Integer, Boolean> checkedCache);
+    Cursor getCompaniesSelectedState(String filter);
 
     void unSelectCompanies(String filter);
 
-    void checkCompaniesById(Map<Integer, Boolean> checkedCache);
+    void setSelectedCompanies(Map<Integer, Boolean> selectionCache);
 
-    int getMaxId(String filter);
+    int getCompaniesMaxId(String filter);
 
     void addIndicators(Collection<Indicator> companies);
 

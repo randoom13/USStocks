@@ -10,7 +10,6 @@ import android.text.TextUtils;
 import android.util.Log;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -82,7 +81,7 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
     }
 
 
-    public Cursor getCompaniesCheckedState(String filter) {
+    public Cursor getCompaniesSelectedState(String filter) {
         SQLiteDatabase database = getReadableDatabase();
         String query = "SELECT cast(" + mCompaniesTable.id +
                 " AS INTEGER ), (SELECT 1 FROM " + mSelectedCompaniesTable.name + " WHERE " +
@@ -94,49 +93,6 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
         query += " ORDER BY cast(" + mCompaniesTable.id + " AS INTEGER)";
         Cursor cursor = database.rawQuery(query, null);
         return cursor;
-    }
-
-    public Map<Integer, Boolean> getCheckCompaniesById(Map<Integer, Boolean> checkedCache) {
-        Map<Integer, Boolean> syncCheckCompanies = new HashMap<Integer, Boolean>();
-        if (checkedCache.isEmpty())
-            return syncCheckCompanies;
-
-        SQLiteDatabase database = getReadableDatabase();
-        StringBuilder unCheckedItemsBuilder = new StringBuilder();
-        StringBuilder checkedItemsBuilder = new StringBuilder();
-
-        for (Map.Entry<Integer, Boolean> cache : checkedCache.entrySet()) {
-            StringBuilder builder = cache.getValue() ? checkedItemsBuilder : unCheckedItemsBuilder;
-            if (builder.length() > 0)
-                builder.append(",");
-            builder.append(cache.getKey());
-        }
-        StringBuilder positiveTable = new StringBuilder();
-        if (checkedItemsBuilder.length() > 0) {
-            positiveTable.append("SELECT " + mSelectedCompaniesTable.id + ", 1 FROM " +
-                    mSelectedCompaniesTable.name + " WHERE EXISTS ( SELECT ");
-            positiveTable.append(checkedItemsBuilder);
-            positiveTable.append(") ");
-        }
-        StringBuilder negativeTable = new StringBuilder();
-        if (unCheckedItemsBuilder.length() > 0) {
-            negativeTable.append("SELECT " + mSelectedCompaniesTable.id + ", 0 FROM " +
-                    mSelectedCompaniesTable.name + " WHERE NOT EXISTS( SELECT ");
-            negativeTable.append(unCheckedItemsBuilder);
-            negativeTable.append(")");
-        }
-        StringBuilder builder = new StringBuilder();
-        builder.append(positiveTable);
-        if (positiveTable.length() > 0 && negativeTable.length() > 0)
-            builder.append(" UNION ALL ");
-        builder.append(negativeTable);
-        Cursor cursor = database.rawQuery(builder.toString(), null);
-        final Integer isChecked = 1;
-        for (cursor.moveToFirst(); !cursor.isAfterLast(); cursor.moveToNext()) {
-            syncCheckCompanies.put(cursor.getInt(0), isChecked.equals(cursor.getInt(1)));
-        }
-        cursor.close();
-        return syncCheckCompanies;
     }
 
     public void unSelectCompanies(String filter) {
@@ -160,12 +116,11 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
         }
     }
 
-    public void checkCompaniesById(Map<Integer, Boolean> checkedCache) {
+    public void setSelectedCompanies(Map<Integer, Boolean> selectionCache) {
         SQLiteDatabase database = getWritableDatabase();
         database.beginTransaction();
         try {
-            for (Map.Entry<Integer, Boolean> cache :
-                    checkedCache.entrySet()) {
+            for (Map.Entry<Integer, Boolean> cache : selectionCache.entrySet()) {
                 int id = cache.getKey();
                 if (cache.getValue()) {
                     ContentValues values = new ContentValues();
@@ -226,7 +181,7 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
         }
     }
 
-    public int getMaxId(String filter) {
+    public int getCompaniesMaxId(String filter) {
         SQLiteDatabase database = getReadableDatabase();
         String query = "SELECT MAX( cast(" + mCompaniesTable.id + " AS INTEGER) ) FROM "
                 + mCompaniesTable.name;
