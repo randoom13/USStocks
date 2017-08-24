@@ -77,18 +77,18 @@ public abstract class BaseRecyclerCursorAdapterv2<T extends RecyclerView.ViewHol
     }
 
     @Override
-    public boolean isLongClick(T holder, int position) {
+    public boolean isLongClick(T holder) {
         mSelectionInfoProxy.setMode(CHOICE_MODE_MULTIPLE);
         BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
-        setSelected(holder, position, !mSelectionInfoProxy.isSelected(position));
+        setSelected(holder, !mSelectionInfoProxy.isSelected(holder.getAdapterPosition()));
         if (null != fragment)
             mRecyclerFragmentWR.get().getActivity().invalidateOptionsMenu();
         return true;
     }
 
     @Override
-    public void setSelected(T holder, int position, boolean isSelected) {
-        mSelectionInfoProxy.setSelection(position, isSelected);
+    public void setSelected(T holder, boolean isSelected) {
+        mSelectionInfoProxy.setSelection(holder.getAdapterPosition(), isSelected);
         if (!isMultiSelectMode())
             updateVisibleItemsSelection();
         else {
@@ -99,25 +99,31 @@ public abstract class BaseRecyclerCursorAdapterv2<T extends RecyclerView.ViewHol
     }
 
 
-    private void updateVisibleItemsSelection() {
+    protected void updateVisibleItemsSelection() {
         BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
         if (null == fragment)
             return;
         LinearLayoutManager layoutManager = (LinearLayoutManager) fragment.getLayoutManager();
+
         int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
         int lastVisibleItem = layoutManager.findLastVisibleItemPosition();
 
+
         for (int index = Math.min(firstVisibleItem, lastVisibleItem);
              index <= Math.max(firstVisibleItem, lastVisibleItem); index++) {
-            T holder = getHolder(index);
-            if (null != holder) {
-                boolean isSelected = mSelectionInfoProxy.isSelected(index);
-                refreshSelectedItem((T) holder, isSelected);
-            }
+            updateVisibleItemSelection(index);
         }
     }
 
-    private T getHolder(int position) {
+    protected void updateVisibleItemSelection(int index) {
+        T holder = getHolder(index);
+        if (null != holder) {
+            boolean isSelected = mSelectionInfoProxy.isSelected(index);
+            refreshSelectedItem((T) holder, isSelected);
+        }
+    }
+
+    protected T getHolder(int position) {
         BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
         if (null == fragment)
             return null;

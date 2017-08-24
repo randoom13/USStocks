@@ -91,18 +91,18 @@ public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolde
     }
 
     @Override
-    public boolean isLongClick(T holder, int position) {
+    public boolean isLongClick(T holder) {
         mSelectionInfoProxy.setMode(CHOICE_MODE_MULTIPLE);
         BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
-        setSelected(holder, position, !mSelectionInfoProxy.isSelected(position));
+        setSelected(holder, !mSelectionInfoProxy.isSelected(holder.getAdapterPosition()));
         if (null != fragment)
             mRecyclerFragmentWR.get().getActivity().invalidateOptionsMenu();
         return true;
     }
 
     @Override
-    public void setSelected(T holder, int position, boolean isSelected) {
-        mSelectionInfoProxy.setSelection(position, isSelected);
+    public void setSelected(T holder, boolean isSelected) {
+        mSelectionInfoProxy.setSelection(holder.getAdapterPosition(), isSelected);
         if (!isMultiSelectMode())
             updateVisibleItemsSelection();
         else {

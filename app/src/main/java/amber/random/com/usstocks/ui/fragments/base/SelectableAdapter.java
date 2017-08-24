@@ -1,13 +1,13 @@
 package amber.random.com.usstocks.ui.fragments.base;
 
 public interface SelectableAdapter<T> {
-    void setSelected(T holder, int position, boolean isSelected);
+    void setSelected(T holder, boolean isSelected);
 
     boolean isSelected(int position);
 
     int getSelectedCount();
 
-    boolean isLongClick(T holder, int position);
+    boolean isLongClick(T holder);
 
     void addSelectionChangedListener(listener listener);
 

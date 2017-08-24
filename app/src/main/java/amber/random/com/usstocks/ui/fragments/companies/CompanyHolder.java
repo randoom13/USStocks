@@ -7,6 +7,8 @@ import android.support.v7.widget.RecyclerView;
 import android.text.Html;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import java.lang.ref.WeakReference;
@@ -19,14 +21,17 @@ import static amber.random.com.usstocks.database.DataBaseHelperProxy.COMPANY_NAM
 
 
 public class CompanyHolder extends RecyclerView.ViewHolder implements View.OnClickListener,
-        View.OnLongClickListener {
+        View.OnLongClickListener, CompoundButton.OnCheckedChangeListener {
     public final TextView companyId;
     public final TextView companyName;
+    public final CheckBox mSelector;
     private final WeakReference<SelectableAdapter> mAdapterWR;
+    private boolean mMultiSelectMode = false;
 
     public CompanyHolder(View view, SelectableAdapter adapter) {
         super(view);
         mAdapterWR = new WeakReference<SelectableAdapter>(adapter);
+        mSelector = (CheckBox) view.findViewById(R.id.selector);
         companyId = (TextView) view.findViewById(R.id.companyId);
         companyName = (TextView) view.findViewById(R.id.companyName);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -42,32 +47,56 @@ public class CompanyHolder extends RecyclerView.ViewHolder implements View.OnCli
         view.setLongClickable(true);
         view.setOnClickListener(this);
         view.setOnLongClickListener(this);
+        mSelector.setOnCheckedChangeListener(this);
     }
 
+    public void setMultiSelectMode(boolean multiSelectMode) {
+        if (multiSelectMode == mMultiSelectMode)
+            return;
+
+        this.mMultiSelectMode = multiSelectMode;
+        if (isSelected())
+            itemView.setActivated(!mMultiSelectMode);
+
+        mSelector.setVisibility(mMultiSelectMode ? View.VISIBLE : View.GONE);
+    }
 
     @Override
     public boolean onLongClick(View v) {
         SelectableAdapter adapter = mAdapterWR.get();
-        if (null == adapter)
+        if (null == adapter || mMultiSelectMode)
             return false;
-        return adapter.isLongClick(this, getAdapterPosition());
-    }
-
-    public void setSelection(boolean isSelected) {
-        itemView.setActivated(isSelected);
+        return adapter.isLongClick(this);
     }
 
     public boolean isSelected() {
-        return itemView.isActivated();
+        return mSelector.isChecked();
+    }
+
+    public void setSelected(boolean isSelected) {
+        if (!mMultiSelectMode)
+            itemView.setActivated(isSelected);
+
+        mSelector.setOnCheckedChangeListener(null);
+        mSelector.setChecked(isSelected);
+        mSelector.setOnCheckedChangeListener(this);
+    }
+
+    private void setSelectedInternal(boolean isSelected) {
+        SelectableAdapter adapter = mAdapterWR.get();
+        if (null != adapter) {
+            adapter.setSelected(this, isSelected);
+        }
     }
 
     @Override
     public void onClick(View v) {
-        boolean isChecked = !isSelected();
-        SelectableAdapter adapter = mAdapterWR.get();
-        if (null != adapter) {
-            adapter.setSelected(this, getAdapterPosition(), isChecked);
-        }
+        setSelectedInternal(!isSelected());
+    }
+
+    @Override
+    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+        setSelectedInternal(isChecked);
     }
 
     void bindModel(Cursor cursor, String maxIdFormat) {

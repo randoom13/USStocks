@@ -21,7 +21,7 @@ public class BaseRecyclerFragment<T> extends BaseContractFragment<T> {
         mRecyclerView.setLayoutManager(layoutManager);
     }
 
-    public RecyclerView getRecyclerView(){
+    public RecyclerView getRecyclerView() {
         return mRecyclerView;
     }
 }

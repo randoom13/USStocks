@@ -19,7 +19,28 @@ public class CompaniesCursorAdapter extends BaseRecyclerCursorAdapterv2<CompanyH
 
     @Override
     protected void refreshSelectedItem(CompanyHolder holder, boolean isSelected) {
-        holder.setSelection(isSelected);
+        holder.setSelected(isSelected);
+    }
+
+    @Override
+    public void closeMultiSelectMode() {
+        super.closeMultiSelectMode();
+        updateVisibleItemsSelection();
+    }
+
+    @Override
+    public boolean isLongClick(CompanyHolder holder) {
+        boolean result = super.isLongClick(holder);
+        if (result) {
+            updateVisibleItemsSelection();
+        }
+        return result;
+    }
+
+    @Override
+    public void onViewAttachedToWindow(CompanyHolder holder) {
+        super.onViewAttachedToWindow(holder);
+        holder.setMultiSelectMode(isMultiSelectMode());
     }
 
     @Override
@@ -28,7 +49,18 @@ public class CompaniesCursorAdapter extends BaseRecyclerCursorAdapterv2<CompanyH
         if (null == fragment)
             return null;
         LayoutInflater inflater = LayoutInflater.from(fragment.getActivity());
-        return new CompanyHolder(inflater.inflate(R.layout.company_row, viewGroup, false), this);
+        CompanyHolder holder = new CompanyHolder(inflater.inflate(R.layout.company_row, viewGroup, false), this);
+        holder.setMultiSelectMode(isMultiSelectMode());
+        return holder;
+    }
+
+    protected void updateVisibleItemSelection(int index) {
+        CompanyHolder holder = getHolder(index);
+        if (null != holder) {
+            holder.setMultiSelectMode(isMultiSelectMode());
+            boolean isSelected = mSelectionInfoProxy.isSelected(index);
+            refreshSelectedItem(holder, isSelected);
+        }
     }
 
     @Override
