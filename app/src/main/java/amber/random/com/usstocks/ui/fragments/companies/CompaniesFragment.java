@@ -127,7 +127,9 @@ public class CompaniesFragment extends
                 initializeBar(getView());
 
             int selectedCount = mAdapter.getSelectedCount();
-            mToolbar.setTitle(String.format("MultiSelect (%d/%d)",
+
+            mToolbar.setTitle(String.format("%s (%d/%d)",
+                    getResources().getString(R.string.context_title),
                     selectedCount, mAdapter.getItemCount()));
             MenuItem item = mToolbar.getMenu().findItem(R.id.show_companies_details);
             if (null != item)
@@ -143,7 +145,7 @@ public class CompaniesFragment extends
         ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
         if (!mAdapter.isMultiSelectMode()) {
             mToolbar.inflateMenu(R.menu.companies_menu);
-            mToolbar.setTitle(R.string.app_name);
+            mToolbar.setTitle(R.string.context_title);
             actionBar.setDisplayHomeAsUpEnabled(false);
         } else {
             mToolbar.inflateMenu(R.menu.multiselect_companies_menu);

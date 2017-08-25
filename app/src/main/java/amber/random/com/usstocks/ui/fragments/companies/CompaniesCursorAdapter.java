@@ -25,14 +25,14 @@ public class CompaniesCursorAdapter extends BaseRecyclerCursorAdapterv2<CompanyH
     @Override
     public void closeMultiSelectMode() {
         super.closeMultiSelectMode();
-        updateVisibleItemsSelection();
+        updateVisibleItems();
     }
 
     @Override
     public boolean isLongClick(CompanyHolder holder) {
         boolean result = super.isLongClick(holder);
         if (result) {
-            updateVisibleItemsSelection();
+            updateVisibleItems();
         }
         return result;
     }
@@ -54,7 +54,8 @@ public class CompaniesCursorAdapter extends BaseRecyclerCursorAdapterv2<CompanyH
         return holder;
     }
 
-    protected void updateVisibleItemSelection(int index) {
+    @Override
+    protected void updateVisibleItem(int index) {
         CompanyHolder holder = getHolder(index);
         if (null != holder) {
             holder.setMultiSelectMode(isMultiSelectMode());

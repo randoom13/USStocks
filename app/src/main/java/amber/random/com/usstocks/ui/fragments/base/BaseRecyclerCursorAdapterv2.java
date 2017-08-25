@@ -90,7 +90,7 @@ public abstract class BaseRecyclerCursorAdapterv2<T extends RecyclerView.ViewHol
     public void setSelected(T holder, boolean isSelected) {
         mSelectionInfoProxy.setSelection(holder.getAdapterPosition(), isSelected);
         if (!isMultiSelectMode())
-            updateVisibleItemsSelection();
+            updateVisibleItems();
         else {
             refreshSelectedItem(holder, isSelected);
         }
@@ -99,7 +99,7 @@ public abstract class BaseRecyclerCursorAdapterv2<T extends RecyclerView.ViewHol
     }
 
 
-    protected void updateVisibleItemsSelection() {
+    protected void updateVisibleItems() {
         BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
         if (null == fragment)
             return;
@@ -111,15 +111,15 @@ public abstract class BaseRecyclerCursorAdapterv2<T extends RecyclerView.ViewHol
 
         for (int index = Math.min(firstVisibleItem, lastVisibleItem);
              index <= Math.max(firstVisibleItem, lastVisibleItem); index++) {
-            updateVisibleItemSelection(index);
+            updateVisibleItem(index);
         }
     }
 
-    protected void updateVisibleItemSelection(int index) {
+    protected void updateVisibleItem(int index) {
         T holder = getHolder(index);
         if (null != holder) {
             boolean isSelected = mSelectionInfoProxy.isSelected(index);
-            refreshSelectedItem((T) holder, isSelected);
+            refreshSelectedItem(holder, isSelected);
         }
     }
 

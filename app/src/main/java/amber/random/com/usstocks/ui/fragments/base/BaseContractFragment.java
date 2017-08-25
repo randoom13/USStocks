@@ -18,7 +18,6 @@ public class BaseContractFragment<T> extends Fragment {
     protected void initializeBar(View view) {
         mToolbar = (Toolbar) view.findViewById(R.id.toolbar);
         ((AppCompatActivity) getActivity()).setSupportActionBar(mToolbar);
-        mToolbar.setLogo(R.mipmap.ic_launcher);
     }
 
     @Override

@@ -16,11 +16,11 @@
 
         <CheckBox
             android:id="@+id/selector"
-            style="@android:style/Widget.Holo.CompoundButton.CheckBox"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="16dp"
-            android:visibility="gone" />
+            android:enabled="false"
+            android:focusable="false" />
 
         <TextView
             android:id="@+id/companyId"

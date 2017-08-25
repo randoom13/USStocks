@@ -104,7 +104,7 @@ public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolde
     public void setSelected(T holder, boolean isSelected) {
         mSelectionInfoProxy.setSelection(holder.getAdapterPosition(), isSelected);
         if (!isMultiSelectMode())
-            updateVisibleItemsSelection();
+            updateVisibleItems();
         else {
             refreshSelectedItem(holder, isSelected);
         }
@@ -117,12 +117,12 @@ public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolde
         mMinVisibleIndex = Integer.MAX_VALUE;
     }
 
-    private void updateVisibleItemsSelection() {
+    private void updateVisibleItems() {
         for (int index = mMinVisibleIndex; index <= mMaxVisibleIndex; index++) {
             T holder = getHolder(index);
             if (null != holder) {
                 boolean isSelected = mSelectionInfoProxy.isSelected(index);
-                refreshSelectedItem((T) holder, isSelected);
+                refreshSelectedItem(holder, isSelected);
             }
         }
     }
@@ -159,6 +159,7 @@ public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolde
     public void onRestoreInstanceState(Bundle state) {
         mSelectionInfoProxy.onRestoreInstanceState(state);
     }
+
 
     public void closeResources() {
         if (mDataCursor != null)
