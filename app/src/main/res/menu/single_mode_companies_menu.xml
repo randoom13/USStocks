@@ -6,4 +6,10 @@
         android:icon="@android:drawable/stat_notify_sync"
         android:title="@string/update"
         app:showAsAction="always" />
+    <item
+        android:id="@+id/show_companies_details"
+        android:title="@string/show_companies_details" />
+    <item
+        android:id="@+id/multiselect_mode"
+        android:title="@string/multiselect_mode" />
 </menu>

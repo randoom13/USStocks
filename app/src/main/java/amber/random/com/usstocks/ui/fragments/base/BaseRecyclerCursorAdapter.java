@@ -72,8 +72,9 @@ public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolde
     }
 
     @Override
-    public void closeMultiSelectMode() {
+    public void singleSelectionMode() {
         mSelectionInfoProxy.setMode(CHOICE_MODE_SINGLE);
+        updateVisibleItems();
         BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
         if (null != fragment)
             fragment.getActivity().invalidateOptionsMenu();
@@ -82,27 +83,32 @@ public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolde
     @Override
     public boolean isLongClick(T holder) {
         mSelectionInfoProxy.setMode(CHOICE_MODE_MULTIPLE);
-        BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
+        updateVisibleItems();
         setSelected(holder, !mSelectionInfoProxy.isSelected(holder.getAdapterPosition()));
+        return true;
+    }
+
+    @Override
+    public void multiSelectMode() {
+        mSelectionInfoProxy.setMode(CHOICE_MODE_MULTIPLE);
+        updateVisibleItems();
+        BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
         if (null != fragment)
             mRecyclerFragmentWR.get().getActivity().invalidateOptionsMenu();
-        return true;
     }
 
     @Override
     public void setSelected(T holder, boolean isSelected) {
         mSelectionInfoProxy.setSelection(holder.getAdapterPosition(), isSelected);
-        if (!isMultiSelectMode())
+        if (mSelectionInfoProxy.isSelectionInvalidated())
             updateVisibleItems();
-        else {
+        else
             refreshSelectedItem(holder, isSelected);
-        }
         if (mSelectionChangedListener != null)
             mSelectionChangedListener.callback();
     }
 
-
-    protected void updateVisibleItems() {
+    private void updateVisibleItems() {
         BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
         if (null == fragment)
             return;

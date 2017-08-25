@@ -24,21 +24,6 @@ public class CompaniesCursorAdapter extends BaseRecyclerCursorAdapter<CompanyHol
     }
 
     @Override
-    public void closeMultiSelectMode() {
-        super.closeMultiSelectMode();
-        updateVisibleItems();
-    }
-
-    @Override
-    public boolean isLongClick(CompanyHolder holder) {
-        boolean result = super.isLongClick(holder);
-        if (result) {
-            updateVisibleItems();
-        }
-        return result;
-    }
-
-    @Override
     public void onViewAttachedToWindow(CompanyHolder holder) {
         super.onViewAttachedToWindow(holder);
         holder.setMultiSelectMode(isMultiSelectMode());

@@ -15,7 +15,9 @@ public interface SelectableAdapter<T> {
 
     boolean isMultiSelectMode();
 
-    void closeMultiSelectMode();
+    void multiSelectMode();
+
+    void singleSelectionMode();
 
     interface listener {
         void callback();

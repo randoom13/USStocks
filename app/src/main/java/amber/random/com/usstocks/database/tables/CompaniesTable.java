@@ -8,7 +8,7 @@ public class CompaniesTable {
     public final String createScript;
 
     public CompaniesTable() {
-        createScript = String.format("CREATE VIRTUAL TABLE %s USING fts3("
-                + "%s , %s, %s)", name, id, latestName, previousNames);
+        createScript = String.format("CREATE VIRTUAL TABLE %s USING fts3(%s , %s, %s)",
+                name, id, latestName, previousNames);
     }
 }

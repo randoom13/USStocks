@@ -122,19 +122,17 @@ public class CompaniesFragment extends
     }
 
     private void updateOptionsMenu() {
+        if (null == mToolbar)
+            initializeBar(getView());
+        int selectedCount = mAdapter.getSelectedCount();
         if (mAdapter.isMultiSelectMode()) {
-            if (null == mToolbar)
-                initializeBar(getView());
-
-            int selectedCount = mAdapter.getSelectedCount();
-
             mToolbar.setTitle(String.format("%s (%d/%d)",
                     getResources().getString(R.string.context_title),
                     selectedCount, mAdapter.getItemCount()));
-            MenuItem item = mToolbar.getMenu().findItem(R.id.show_companies_details);
-            if (null != item)
-                item.setEnabled(selectedCount > 0);
         }
+        MenuItem item = mToolbar.getMenu().findItem(R.id.show_companies_details);
+        if (null != item)
+            item.setEnabled(selectedCount > 0);
     }
 
     @Override
@@ -144,11 +142,11 @@ public class CompaniesFragment extends
             initializeBar(getView());
         ActionBar actionBar = ((AppCompatActivity) getActivity()).getSupportActionBar();
         if (!mAdapter.isMultiSelectMode()) {
-            mToolbar.inflateMenu(R.menu.companies_menu);
+            mToolbar.inflateMenu(R.menu.single_mode_companies_menu);
             mToolbar.setTitle(R.string.context_title);
             actionBar.setDisplayHomeAsUpEnabled(false);
         } else {
-            mToolbar.inflateMenu(R.menu.multiselect_companies_menu);
+            mToolbar.inflateMenu(R.menu.multiselect_mode_companies_menu);
             actionBar.setDisplayHomeAsUpEnabled(true);
         }
         updateOptionsMenu();
@@ -166,9 +164,13 @@ public class CompaniesFragment extends
                 showDetails();
                 return true;
 
-            case R.id.cancel:
+            case R.id.multiselect_mode:
+                mAdapter.multiSelectMode();
+                return true;
+
+            case R.id.single_selection_mode:
             case android.R.id.home:
-                resetMultiSelect();
+                mAdapter.singleSelectionMode();
                 return true;
         }
         return super.onOptionsItemSelected(item);
@@ -187,10 +189,6 @@ public class CompaniesFragment extends
                         mToolbar = null;
                     }
                 });
-    }
-
-    private void resetMultiSelect() {
-        mAdapter.closeMultiSelectMode();
     }
 
     @Override

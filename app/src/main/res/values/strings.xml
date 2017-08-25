@@ -5,7 +5,8 @@
     <string name="filter">Filter</string>
     <string name="hint_company_id">Company SEC CIK</string>
     <string name="hint_name_latest">The name of the company in the latest quarterly or yearly filing</string>
-    <string name="cancel">Cancel</string>
+    <string name="single_selection_mode">Single selection mode</string>
+    <string name="multiselect_mode">Multi select mode</string>
     <string name="context_title">Companies </string>
     <string name="show_companies_details">Show companies details</string>
     <string name="token">Token:</string>

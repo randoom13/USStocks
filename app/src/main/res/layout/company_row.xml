@@ -28,11 +28,12 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_marginRight="16dp"
+            android:layout_toLeftOf="@+id/selector"
             android:layout_toRightOf="@id/companyId"
             android:contentDescription="@string/hint_name_latest" />
 
         <CheckBox
-            android:id="@+id/selector"
+            android:id="@id/selector"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentRight="true"

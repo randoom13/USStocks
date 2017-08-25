@@ -31,6 +31,7 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
     private CancellationSignal mCancellationSignal = new CancellationSignal();
     private int mMode = CHOICE_MODE_SINGLE;
     private Disposable mDisposable;
+    private boolean mSelectionInvalidated;
 
     public CompaniesSelectionInfoProxy(int maxCacheSize) {
         mCursor = null;
@@ -59,10 +60,17 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
     }
 
     public void setSelection(int position, boolean isSelected) {
-        if (mMode == CHOICE_MODE_MULTIPLE)
+        if (mMode == CHOICE_MODE_MULTIPLE) {
             setMultipleSelection(position, isSelected);
-        else if (mMode == CHOICE_MODE_SINGLE)
+            mSelectionInvalidated = false;
+        } else if (mMode == CHOICE_MODE_SINGLE) {
             setSingleSelection(position, isSelected);
+            mSelectionInvalidated = true;
+        }
+    }
+
+    public boolean isSelectionInvalidated() {
+        return mSelectionInvalidated;
     }
 
     private void setMultipleSelection(int position, boolean isSelected) {
@@ -135,10 +143,7 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
             for (mCursor.moveToFirst(); !mCursor.isAfterLast(); mCursor.moveToNext()) {
                 int companyId = mCursor.getInt(0);
                 Boolean isChecked = mSelectedCache.get(companyId);
-                if (isChecked != null) {
-                    if (isChecked)
-                        count++;
-                } else if (mCursor.getInt(1) > 0)
+                if (Boolean.TRUE.equals(isChecked) || mCursor.getInt(1) > 0)
                     count++;
             }
         }

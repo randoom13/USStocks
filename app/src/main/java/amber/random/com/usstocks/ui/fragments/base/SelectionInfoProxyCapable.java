@@ -25,5 +25,7 @@ public interface SelectionInfoProxyCapable {
 
     void closeResources();
 
+    boolean isSelectionInvalidated();
+
     void setSelection(int position, boolean isSelected);
 }
