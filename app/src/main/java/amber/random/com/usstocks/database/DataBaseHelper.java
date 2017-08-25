@@ -206,9 +206,9 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
         String query = "";
         if (!TextUtils.isEmpty(filter)) {
             query = "SELECT rowid _id, snippet(" + mCompaniesTable.name + ",'<b>','</b>','<b>...</b>',0) " + COMPANY_ID +
-                    ", snippet(" + mCompaniesTable.name + ",'<b>','</b>','<b>...</b>',1) " + COMPANY_NAME + ", " +
-                    mCompaniesTable.previousNames +
-                    " " + COMPANY_PREVIOUS_NAMES + " FROM " + mCompaniesTable.name + " WHERE " + getFilterSequence(filter);
+                    ", snippet(" + mCompaniesTable.name + ",'<b>','</b>','<b>...</b>',1) " + COMPANY_NAME + ", snippet(" +
+                    mCompaniesTable.name + ",'<b>','</b>','<b>...</b>',2) " + COMPANY_PREVIOUS_NAMES +
+                    " FROM " + mCompaniesTable.name + " WHERE " + getFilterSequence(filter);
         } else query = "SELECT rowid _id, " + mCompaniesTable.id + " " + COMPANY_ID + ", " +
                 mCompaniesTable.latestName + " " + COMPANY_NAME + ", " + mCompaniesTable.previousNames +
                 " " + COMPANY_PREVIOUS_NAMES + " FROM " + mCompaniesTable.name;

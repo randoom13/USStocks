@@ -9,7 +9,6 @@ public class CompaniesTable {
 
     public CompaniesTable() {
         createScript = String.format("CREATE VIRTUAL TABLE %s USING fts3("
-                + "%s INTEGER NOT NULL PRIMARY KEY," +
-                "%s TEXT NOT NULL, %s TEXT)", name, id, latestName, previousNames);
+                + "%s , %s, %s)", name, id, latestName, previousNames);
     }
 }

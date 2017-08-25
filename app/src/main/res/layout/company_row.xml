@@ -7,27 +7,17 @@
     android:layout_margin="4dp"
     app:cardCornerRadius="4dp">
 
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="?android:attr/activatedBackgroundIndicator"
-        android:focusable="false"
-        android:orientation="horizontal">
-
-        <CheckBox
-            android:id="@+id/selector"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="16dp"
-            android:clickable="false"
-            android:enabled="false"
-            android:focusable="false" />
+        android:focusable="false">
 
         <TextView
             android:id="@+id/companyId"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true"
             android:layout_marginRight="16dp"
             android:contentDescription="@string/hint_company_id"
             android:gravity="right" />
@@ -36,9 +26,20 @@
             android:id="@+id/companyName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
+            android:layout_centerVertical="true"
             android:layout_marginRight="16dp"
+            android:layout_toRightOf="@id/companyId"
             android:contentDescription="@string/hint_name_latest" />
 
-    </LinearLayout>
+        <CheckBox
+            android:id="@+id/selector"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"
+            android:layout_marginLeft="16dp"
+            android:clickable="false"
+            android:enabled="false"
+            android:focusable="false" />
+    </RelativeLayout>
 </android.support.v7.widget.CardView>
