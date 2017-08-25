@@ -4,17 +4,18 @@ import android.database.Cursor;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
+import amber.random.com.usstocks.App;
 import amber.random.com.usstocks.R;
-import amber.random.com.usstocks.ui.fragments.base.BaseRecyclerCursorAdapterv2;
+import amber.random.com.usstocks.ui.fragments.base.BaseRecyclerCursorAdapter;
 import amber.random.com.usstocks.ui.fragments.base.BaseRecyclerFragment;
 
-public class CompaniesCursorAdapter extends BaseRecyclerCursorAdapterv2<CompanyHolder> {
+public class CompaniesCursorAdapter extends BaseRecyclerCursorAdapter<CompanyHolder> {
     private String mCompaniesMaxId;
 
     public CompaniesCursorAdapter(BaseRecyclerFragment activity) {
         super(activity);
+        App.getRequestComponent().inject(this);
         // https://www.neotechsoftware.com/blog/android-intent-size-limit
-        mSelectionInfoProxy = new CompaniesSelectionInfoProxy(300);
     }
 
     @Override

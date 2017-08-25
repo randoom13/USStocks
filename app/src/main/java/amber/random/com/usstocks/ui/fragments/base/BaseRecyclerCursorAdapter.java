@@ -2,11 +2,14 @@ package amber.random.com.usstocks.ui.fragments.base;
 
 import android.database.Cursor;
 import android.os.Bundle;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.view.ViewGroup;
 
 import java.lang.ref.WeakReference;
+
+import javax.inject.Inject;
 
 import io.reactivex.Observable;
 
@@ -16,15 +19,13 @@ import static amber.random.com.usstocks.ui.fragments.base.SelectionInfoProxyCapa
 public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolder>
         extends RecyclerView.Adapter<T> implements SelectableAdapter<T> {
     protected final WeakReference<BaseRecyclerFragment> mRecyclerFragmentWR;
+    @Inject
     protected SelectionInfoProxyCapable mSelectionInfoProxy;
     protected Cursor mDataCursor;
     private listener mSelectionChangedListener;
-    private int mMaxVisibleIndex;
-    private int mMinVisibleIndex;
 
     public BaseRecyclerCursorAdapter(BaseRecyclerFragment recyclerFragment) {
         mRecyclerFragmentWR = new WeakReference<BaseRecyclerFragment>(recyclerFragment);
-        invalidateVisibleIndices();
     }
 
     public abstract T onCreateViewHolder(ViewGroup viewGroup, int i);
@@ -42,21 +43,9 @@ public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolde
     }
 
     @Override
-    public void onViewDetachedFromWindow(T holder) {
-        super.onViewDetachedFromWindow(holder);
-        int position = holder.getAdapterPosition();
-        if (mMaxVisibleIndex == position)
-            mMaxVisibleIndex--;
-        if (mMinVisibleIndex == position)
-            mMinVisibleIndex++;
-    }
-
-    @Override
     public void onViewAttachedToWindow(T holder) {
         super.onViewAttachedToWindow(holder);
         int position = holder.getAdapterPosition();
-        mMaxVisibleIndex = Math.max(position, mMaxVisibleIndex);
-        mMinVisibleIndex = Math.min(position, mMinVisibleIndex);
         boolean isSelected = mSelectionInfoProxy.isSelected(position);
         refreshSelectedItem(holder, isSelected);
     }
@@ -112,26 +101,36 @@ public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolde
             mSelectionChangedListener.callback();
     }
 
-    private void invalidateVisibleIndices() {
-        mMaxVisibleIndex = Integer.MIN_VALUE;
-        mMinVisibleIndex = Integer.MAX_VALUE;
-    }
 
-    private void updateVisibleItems() {
-        for (int index = mMinVisibleIndex; index <= mMaxVisibleIndex; index++) {
-            T holder = getHolder(index);
-            if (null != holder) {
-                boolean isSelected = mSelectionInfoProxy.isSelected(index);
-                refreshSelectedItem(holder, isSelected);
-            }
+    protected void updateVisibleItems() {
+        BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
+        if (null == fragment)
+            return;
+        LinearLayoutManager layoutManager = (LinearLayoutManager) fragment.getLayoutManager();
+
+        int firstVisibleItem = layoutManager.findFirstVisibleItemPosition();
+        int lastVisibleItem = layoutManager.findLastVisibleItemPosition();
+
+
+        for (int index = Math.min(firstVisibleItem, lastVisibleItem);
+             index <= Math.max(firstVisibleItem, lastVisibleItem); index++) {
+            updateVisibleItem(index);
         }
     }
 
+    protected void updateVisibleItem(int index) {
+        T holder = getHolder(index);
+        if (null != holder) {
+            boolean isSelected = mSelectionInfoProxy.isSelected(index);
+            refreshSelectedItem(holder, isSelected);
+        }
+    }
 
-    private T getHolder(int position) {
+    protected T getHolder(int position) {
         BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
         if (null == fragment)
             return null;
+
         View view = fragment.getRecyclerView().getChildAt(position);
         if (null == view)
             return null;
@@ -160,7 +159,6 @@ public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolde
         mSelectionInfoProxy.onRestoreInstanceState(state);
     }
 
-
     public void closeResources() {
         if (mDataCursor != null)
             mDataCursor.close();
@@ -171,7 +169,6 @@ public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolde
     public void updateCursor(Cursor dataCursor) {
         Cursor oldCursor = mDataCursor;
         mDataCursor = dataCursor;
-        invalidateVisibleIndices();
         notifyDataSetChanged();
         if (oldCursor != null)
             oldCursor.close();

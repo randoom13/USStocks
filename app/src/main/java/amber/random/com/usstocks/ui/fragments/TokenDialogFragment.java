@@ -13,8 +13,8 @@ import android.widget.TextView;
 
 import javax.inject.Inject;
 
+import amber.random.com.usstocks.App;
 import amber.random.com.usstocks.R;
-import amber.random.com.usstocks.injection.App;
 import amber.random.com.usstocks.preference.AppPreferences;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;

@@ -14,11 +14,11 @@ import com.jakewharton.retrofit2.adapter.rxjava2.HttpException;
 
 import javax.inject.Inject;
 
+import amber.random.com.usstocks.App;
 import amber.random.com.usstocks.database.DataBaseHelperProxy;
 import amber.random.com.usstocks.exceptions.NoConnectionException;
 import amber.random.com.usstocks.exceptions.UnknownFormatException;
 import amber.random.com.usstocks.exceptions.UpdateFailedException;
-import amber.random.com.usstocks.injection.App;
 import amber.random.com.usstocks.preference.AppPreferences;
 import amber.random.com.usstocks.service.rest.BackendServiceProxy;
 import io.reactivex.disposables.Disposable;

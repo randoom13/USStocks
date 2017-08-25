@@ -7,9 +7,9 @@ import android.support.v7.app.AppCompatActivity;
 
 import javax.inject.Inject;
 
+import amber.random.com.usstocks.App;
 import amber.random.com.usstocks.BuildConfig;
 import amber.random.com.usstocks.R;
-import amber.random.com.usstocks.injection.App;
 import amber.random.com.usstocks.preference.AppPreferences;
 import amber.random.com.usstocks.ui.fragments.TokenDialogFragment;
 import amber.random.com.usstocks.ui.fragments.companies.CompaniesFragment;

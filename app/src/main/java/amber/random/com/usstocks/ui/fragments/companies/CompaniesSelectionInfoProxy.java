@@ -9,8 +9,8 @@ import android.util.Log;
 
 import javax.inject.Inject;
 
+import amber.random.com.usstocks.App;
 import amber.random.com.usstocks.database.DataBaseHelperProxy;
-import amber.random.com.usstocks.injection.App;
 import amber.random.com.usstocks.ui.fragments.base.ParcelableSelectedCache;
 import amber.random.com.usstocks.ui.fragments.base.SelectionInfoProxyCapable;
 import io.reactivex.Observable;

@@ -15,9 +15,9 @@ import com.lsjwzh.widget.recyclerviewpager.TabLayoutSupport;
 
 import javax.inject.Inject;
 
+import amber.random.com.usstocks.App;
 import amber.random.com.usstocks.R;
 import amber.random.com.usstocks.database.DataBaseHelperProxy;
-import amber.random.com.usstocks.injection.App;
 import amber.random.com.usstocks.ui.fragments.base.BaseContractFragment;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
