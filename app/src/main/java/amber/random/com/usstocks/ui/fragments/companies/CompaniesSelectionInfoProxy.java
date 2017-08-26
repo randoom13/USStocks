@@ -29,7 +29,7 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
     private boolean mSyncing = false;
     private Cursor mCursor;
     private CancellationSignal mCancellationSignal = new CancellationSignal();
-    private int mMode = CHOICE_MODE_SINGLE;
+    private int mSelectionMode = CHOICE_MODE_SINGLE;
     private Disposable mDisposable;
     private boolean mSelectionInvalidated;
 
@@ -40,14 +40,14 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
     }
 
     public int getMode() {
-        return mMode;
+        return mSelectionMode;
     }
 
-    public void setMode(int mode) {
-        if (mode != CHOICE_MODE_SINGLE && mode != CHOICE_MODE_MULTIPLE)
-            throw new IllegalArgumentException();
+    public void setMode(int selectionMode) {
+        if (selectionMode != CHOICE_MODE_SINGLE && selectionMode != CHOICE_MODE_MULTIPLE)
+            throw new IllegalArgumentException("selectionMode");
 
-        this.mMode = mode;
+        this.mSelectionMode = selectionMode;
     }
 
     public Observable<Boolean> setFilter(String filter) {
@@ -60,13 +60,14 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
     }
 
     public void setSelection(int position, boolean isSelected) {
-        if (mMode == CHOICE_MODE_MULTIPLE) {
+        if (mSelectionMode == CHOICE_MODE_MULTIPLE) {
             setMultipleSelection(position, isSelected);
             mSelectionInvalidated = false;
-        } else if (mMode == CHOICE_MODE_SINGLE) {
-            setSingleSelection(position, isSelected);
+        } else if (mSelectionMode == CHOICE_MODE_SINGLE) {
+            setSingleSelection(position);
             mSelectionInvalidated = true;
-        }
+        } else
+            mSelectionInvalidated = false;
     }
 
     public boolean isSelectionInvalidated() {
@@ -77,7 +78,7 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
         synchronized (mLock) {
             mCursor.moveToPosition(position);
             int companyId = mCursor.getInt(0);
-            boolean cursorIsChecked = mCursor.getInt(1) > 0;
+            boolean cursorIsChecked = isSelected();
             if (isSelected != cursorIsChecked)
                 mSelectedCache.put(companyId, isSelected);
             else
@@ -91,21 +92,17 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
         }
     }
 
-    private void setSingleSelection(int position, boolean isSelected) {
+    private void setSingleSelection(int position) {
         synchronized (mLock) {
+            boolean needSync = false;
             for (mCursor.moveToFirst(); !mCursor.isAfterLast(); mCursor.moveToNext()) {
                 int companyId = mCursor.getInt(0);
                 if (mCursor.getInt(1) > 0) {
                     mSelectedCache.put(companyId, false);
                     if (mMaxCacheSize < mSelectedCache.size() + 1) {
                         mSelectedCache.clear();
-                        mCursor.moveToPosition(position);
-                        mSelectedCache.put(mCursor.getInt(0), true);
-                        disposeDisposable();
-                        mDisposable = launchDatabaseSync(true)
-                                .subscribeOn(Schedulers.computation())
-                                .subscribe();
-                        return;
+                        needSync = true;
+                        break;
                     }
                 } else
                     mSelectedCache.remove(companyId);
@@ -113,6 +110,12 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
 
             mCursor.moveToPosition(position);
             mSelectedCache.put(mCursor.getInt(0), true);
+            if (needSync) {
+                disposeDisposable();
+                mDisposable = launchDatabaseSync(true)
+                        .subscribeOn(Schedulers.computation())
+                        .subscribe();
+            }
         }
     }
 
@@ -122,13 +125,13 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
 
     public void onSaveInstanceState(Bundle state) {
         state.putParcelable(sSelectionsInfo, getSelectionsInfo());
-        state.putInt(sSelectionModeInfo, mMode);
+        state.putInt(sSelectionModeInfo, mSelectionMode);
     }
 
     public void onRestoreInstanceState(Bundle state) {
         if (state != null) {
             mSelectedCache = state.getParcelable(sSelectionsInfo);
-            mMode = state.getInt(sSelectionModeInfo, CHOICE_MODE_SINGLE);
+            mSelectionMode = state.getInt(sSelectionModeInfo, CHOICE_MODE_SINGLE);
         }
         if (mSelectedCache == null)
             mSelectedCache = new ParcelableSelectedCache();
@@ -141,9 +144,7 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
                 return 0;
 
             for (mCursor.moveToFirst(); !mCursor.isAfterLast(); mCursor.moveToNext()) {
-                int companyId = mCursor.getInt(0);
-                Boolean isChecked = mSelectedCache.get(companyId);
-                if (Boolean.TRUE.equals(isChecked) || mCursor.getInt(1) > 0)
+                if (isSelected())
                     count++;
             }
         }
@@ -177,14 +178,16 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
     public boolean isSelected(int position) {
         synchronized (mLock) {
             mCursor.moveToPosition(position);
-            int companyId = mCursor.getInt(0);
-            Boolean isSelected = mSelectedCache.get(companyId);
-            if (isSelected != null)
-                return isSelected;
-
-            isSelected = mCursor.getInt(1) == 1;
-            return isSelected;
+            return isSelected();
         }
+    }
+
+    private boolean isSelected() {
+        int companyId = mCursor.getInt(0);
+        Boolean isSelected = mSelectedCache.get(companyId);
+        if (isSelected != null)
+            return isSelected;
+        return mCursor.getInt(1) == 1;
     }
 
     protected Observable<Boolean> launchDatabaseSync(boolean resetSelection,
