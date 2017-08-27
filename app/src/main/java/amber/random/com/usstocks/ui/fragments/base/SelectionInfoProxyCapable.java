@@ -17,15 +17,15 @@ public interface SelectionInfoProxyCapable {
 
     boolean isSelected(int position);
 
-    int getMode();
+    int getSelectionMode();
 
-    void setMode(int mode);
+    void setSelectionMode(int mode);
 
     int getSelectedCount();
 
     void closeResources();
 
-    boolean isSelectionInvalidated();
+    boolean isSelectionsInvalidated();
 
     void setSelection(int position, boolean isSelected);
 }

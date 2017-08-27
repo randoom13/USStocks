@@ -1,6 +1,7 @@
 package amber.random.com.usstocks.ui.fragments.companies_details;
 
 import android.database.Cursor;
+import android.database.SQLException;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
@@ -66,15 +67,13 @@ public class CompaniesDetailsFragment extends BaseContractFragment<CompaniesDeta
         })
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .onErrorReturn(ex -> {
-                    Log.e(this.getClass().getSimpleName(), "Can't load cursor", ex);
-                    return null;
-                })
                 .subscribe(c -> {
-                    if (c != null) {
-                        pager.setAdapter(new PageAdapter(getActivity().getLayoutInflater(), c));
-                        TabLayoutSupport.setupWithViewPager(tabLayout, pager, new TabAdapter(c));
-                    }
+                    pager.setAdapter(new PageAdapter(getActivity().getLayoutInflater(), c));
+                    TabLayoutSupport.setupWithViewPager(tabLayout, pager, new TabAdapter(c));
+                }, ex -> {
+                    Log.e(this.getClass().getSimpleName(), "Can't load cursor", ex);
+                    if (!(ex instanceof SQLException))
+                        throw (Exception) ex;
                 });
         return view;
     }

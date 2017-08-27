@@ -85,12 +85,6 @@ public class CompaniesFragment extends
         }
     };
 
-
-    private void disposeDisposable() {
-        if (mDisposable != null && !mDisposable.isDisposed())
-            mDisposable.dispose();
-    }
-
     @Override
     public void onClick(boolean isClose) {
         if (isClose)
@@ -99,40 +93,11 @@ public class CompaniesFragment extends
             verifyLiveToken();
     }
 
-    private void verifyLiveToken() {
-        disposeDisposable();
-        mDisposable = this.mAppPreferences.hasToken()
-                .subscribeOn(Schedulers.computation())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(res -> {
-                    if (!mDisposable.isDisposed())
-                        if (Boolean.TRUE.equals(res)) {
-                            mProgress.setVisibility(View.VISIBLE);
-                            launchService();
-                        } else
-                            mContract.showTokenDialog(R.string.invalid_token, this, true);
-                });
-    }
-
     @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putCharSequence(sStateQuery, mFilter.getText());
         mAdapter.onSaveInstanceState(outState);
-    }
-
-    private void updateOptionsMenu() {
-        if (null == mToolbar)
-            initializeBar(getView());
-        int selectedCount = mAdapter.getSelectedCount();
-        if (mAdapter.isMultiSelectMode()) {
-            mToolbar.setTitle(String.format("%s (%d/%d)",
-                    getResources().getString(R.string.context_title),
-                    selectedCount, mAdapter.getItemCount()));
-        }
-        MenuItem item = mToolbar.getMenu().findItem(R.id.show_companies_details);
-        if (null != item)
-            item.setEnabled(selectedCount > 0);
     }
 
     @Override
@@ -174,21 +139,6 @@ public class CompaniesFragment extends
                 return true;
         }
         return super.onOptionsItemSelected(item);
-    }
-
-
-    private void showDetails() {
-        disposeDisposable();
-        String filter = mFilter.getText().toString();
-        mDisposable = mAdapter.launchSelectionDataSync(filter)
-                .subscribeOn(Schedulers.computation())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(res -> {
-                    if (Boolean.TRUE.equals(res)) {
-                        mContract.showDetails(filter);
-                        mToolbar = null;
-                    }
-                });
     }
 
     @Override
@@ -263,12 +213,60 @@ public class CompaniesFragment extends
         super.onDestroy();
     }
 
+    private void verifyLiveToken() {
+        disposeDisposable();
+        mDisposable = this.mAppPreferences.hasToken()
+                .subscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(res -> {
+                    if (!mDisposable.isDisposed())
+                        if (Boolean.TRUE.equals(res)) {
+                            mProgress.setVisibility(View.VISIBLE);
+                            launchService();
+                        } else
+                            mContract.showTokenDialog(R.string.invalid_token, this, true);
+                });
+    }
+
+    private void updateOptionsMenu() {
+        if (null == mToolbar)
+            initializeBar(getView());
+        int selectedCount = mAdapter.getSelectedCount();
+        if (mAdapter.isMultiSelectMode()) {
+            mToolbar.setTitle(String.format("%s (%d/%d)",
+                    getResources().getString(R.string.context_title),
+                    selectedCount, mAdapter.getItemCount()));
+        }
+        MenuItem item = mToolbar.getMenu().findItem(R.id.show_companies_details);
+        if (null != item)
+            item.setEnabled(selectedCount > 0);
+    }
+
     private void launchService() {
         mProgress.setVisibility(View.VISIBLE);
         mEmptyRecordsList.setVisibility(View.GONE);
         Intent intent = new Intent(getActivity(), UpdateDatabaseService.class);
         intent.putExtra(UpdateDatabaseService.EXTRA_DATA_UPDATE, UpdateDatabaseService.COMPANIES_LIST);
         getActivity().startService(intent);
+    }
+
+    private void showDetails() {
+        disposeDisposable();
+        String filter = mFilter.getText().toString();
+        mDisposable = mAdapter.launchSelectionDataSync(filter)
+                .subscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(res -> {
+                    if (Boolean.TRUE.equals(res)) {
+                        mContract.showDetails(filter);
+                        mToolbar = null;
+                    }
+                });
+    }
+
+    private void disposeDisposable() {
+        if (mDisposable != null && !mDisposable.isDisposed())
+            mDisposable.dispose();
     }
 
     private void failedLoadCompanies() {
