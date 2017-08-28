@@ -106,11 +106,11 @@ public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolde
 
     @Override
     public void setSelected(T holder, boolean isSelected) {
-        boolean result = mSelectionInfoProxy.setSelection(holder.getAdapterPosition(), isSelected);
+        mSelectionInfoProxy.setSelection(holder.getAdapterPosition(), isSelected);
         if (mSelectionInfoProxy.isSelectionsInvalidated())
             updateVisibleItems();
         else
-            refreshSelectedItem(holder, result);
+            refreshSelectedItem(holder, isSelected);
         if (mSelectionChangedListener != null)
             mSelectionChangedListener.callback();
     }

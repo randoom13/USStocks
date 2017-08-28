@@ -69,17 +69,13 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
     }
 
     @Override
-    public boolean setSelection(int position, boolean isSelected) {
-        if (mSelectionMode == CHOICE_MODE_MULTIPLE) {
+    public void setSelection(int position, boolean isSelected) {
+        if (mSelectionMode == CHOICE_MODE_MULTIPLE)
             setMultipleSelection(position, isSelected);
-            return isSelected;
-        } else if (mSelectionMode == CHOICE_MODE_SINGLE) {
+        else if (mSelectionMode == CHOICE_MODE_SINGLE)
             setSingleSelection(position);
-            return true;
-        } else {
+        else
             mSelectionsInvalidated = false;
-            return false;
-        }
     }
 
     @Override
