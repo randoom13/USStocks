@@ -26,7 +26,7 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
 public class CompaniesDetailsFragment extends BaseContractFragment<CompaniesDetailsFragment.Contract> {
-    private static final String sFILTER = "filter";
+    private static final String sFILTER = "com_det_filter";
     @Inject
     protected DataBaseHelperProxy mDataBaseHelper;
 
@@ -48,10 +48,9 @@ public class CompaniesDetailsFragment extends BaseContractFragment<CompaniesDeta
         super.onDestroyView();
     }
 
-    @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.main_company_details_fragment, container, false);
+    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
         initializeBar(view);
         RecyclerViewPager pager = (RecyclerViewPager) view.findViewById(R.id.pager);
         pager.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
@@ -67,14 +66,20 @@ public class CompaniesDetailsFragment extends BaseContractFragment<CompaniesDeta
         })
                 .subscribeOn(Schedulers.computation())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(c -> {
-                    pager.setAdapter(new PageAdapter(getActivity().getLayoutInflater(), c));
-                    TabLayoutSupport.setupWithViewPager(tabLayout, pager, new TabAdapter(c));
+                .subscribe(cursor -> {
+                    pager.setAdapter(new PageAdapter(getActivity().getLayoutInflater(), cursor));
+                    TabLayoutSupport.setupWithViewPager(tabLayout, pager, new TabAdapter(cursor));
                 }, ex -> {
                     Log.e(this.getClass().getSimpleName(), "Can't load cursor", ex);
                     if (!(ex instanceof SQLException))
                         throw (Exception) ex;
                 });
+    }
+
+    @Nullable
+    @Override
+    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.main_company_details_fragment, container, false);
         return view;
     }
 

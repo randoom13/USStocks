@@ -15,6 +15,7 @@ public class CompaniesCursorAdapter extends BaseRecyclerCursorAdapter<CompanyHol
     public CompaniesCursorAdapter(BaseRecyclerFragment activity) {
         super(activity);
         App.getRequestComponent().inject(this);
+        mSelectionInfoProxy.setSynchronizationHandler(this);
         // https://www.neotechsoftware.com/blog/android-intent-size-limit
     }
 

@@ -10,12 +10,14 @@
         android:id="@+id/tabs"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@color/colorPrimary"
         app:tabMode="scrollable" />
-
     <com.lsjwzh.widget.recyclerviewpager.RecyclerViewPager
         android:id="@+id/pager"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginLeft="@dimen/horizontal_margin"
+        android:layout_marginRight="@dimen/horizontal_margin"
         app:rvp_singlePageFling="true"
         app:rvp_triggerOffset="0.1" />
 </LinearLayout>

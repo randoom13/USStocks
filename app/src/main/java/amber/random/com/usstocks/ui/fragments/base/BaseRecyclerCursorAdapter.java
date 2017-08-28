@@ -17,7 +17,7 @@ import static amber.random.com.usstocks.ui.fragments.base.SelectionInfoProxyCapa
 import static amber.random.com.usstocks.ui.fragments.base.SelectionInfoProxyCapable.CHOICE_MODE_SINGLE;
 
 public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolder>
-        extends RecyclerView.Adapter<T> implements SelectableAdapter<T> {
+        extends RecyclerView.Adapter<T> implements SelectableAdapter<T>, SelectionInfoProxyCapable.DatabaseSynchronizable {
     protected final WeakReference<BaseRecyclerFragment> mRecyclerFragmentWR;
     @Inject
     protected SelectionInfoProxyCapable mSelectionInfoProxy;
@@ -34,6 +34,13 @@ public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolde
 
     protected abstract void refreshSelectedItem(T holder, boolean isChecked);
 
+    @Override
+    public void syncCompleted() {
+        updateVisibleItems();
+        BaseRecyclerFragment fragment = mRecyclerFragmentWR.get();
+        if (null != fragment)
+            fragment.getActivity().invalidateOptionsMenu();
+    }
 
     @Override
     public int getItemCount() {
@@ -99,11 +106,11 @@ public abstract class BaseRecyclerCursorAdapter<T extends RecyclerView.ViewHolde
 
     @Override
     public void setSelected(T holder, boolean isSelected) {
-        mSelectionInfoProxy.setSelection(holder.getAdapterPosition(), isSelected);
+        boolean result = mSelectionInfoProxy.setSelection(holder.getAdapterPosition(), isSelected);
         if (mSelectionInfoProxy.isSelectionsInvalidated())
             updateVisibleItems();
         else
-            refreshSelectedItem(holder, isSelected);
+            refreshSelectedItem(holder, result);
         if (mSelectionChangedListener != null)
             mSelectionChangedListener.callback();
     }

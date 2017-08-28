@@ -72,8 +72,8 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
 
             query = "SELECT " + mSelectedCompaniesTable.id + " FROM " +
                     mSelectedCompaniesTable.name + " INNER JOIN (" +
-                    query + " ) ON cast(" + mSelectedCompaniesTable.id
-                    + " AS TEXT) = " + mCompaniesTable.id;
+                    query + " ) ON " + mSelectedCompaniesTable.id
+                    + " = cast(" + mCompaniesTable.id + " AS INTEGER)";
         }
 
         Cursor cursor = database.rawQuery(query, null);
@@ -84,9 +84,10 @@ public class DataBaseHelper extends SQLiteOpenHelper implements DataBaseHelperPr
     public Cursor getCompaniesSelectedState(String filter) {
         SQLiteDatabase database = getReadableDatabase();
         String query = "SELECT cast(" + mCompaniesTable.id +
-                " AS INTEGER ), (SELECT 1 FROM " + mSelectedCompaniesTable.name + " WHERE " +
-                mSelectedCompaniesTable.id + " = cast(" + mCompaniesTable.id + " AS INTEGER) LIMIT 1) " +
-                " FROM " + mCompaniesTable.name;
+                " AS INTEGER ),  " +
+                "CASE WHEN " + mSelectedCompaniesTable.id + " IS NULL THEN 0 ELSE 1 END" +
+                " FROM " + mCompaniesTable.name + " LEFT JOIN " + mSelectedCompaniesTable.name +
+                "  ON " + mSelectedCompaniesTable.id + " = cast(" + mCompaniesTable.id + " AS INTEGER)";
         if (!TextUtils.isEmpty(filter)) {
             query += " WHERE " + getFilterSequence(filter);
         }

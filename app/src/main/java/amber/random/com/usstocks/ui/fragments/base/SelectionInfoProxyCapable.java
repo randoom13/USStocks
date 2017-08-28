@@ -27,5 +27,11 @@ public interface SelectionInfoProxyCapable {
 
     boolean isSelectionsInvalidated();
 
-    void setSelection(int position, boolean isSelected);
+    boolean setSelection(int position, boolean isSelected);
+
+    void setSynchronizationHandler(DatabaseSynchronizable handler);
+
+    interface DatabaseSynchronizable {
+        void syncCompleted();
+    }
 }

@@ -25,6 +25,7 @@ public class CompanyHolder extends RecyclerView.ViewHolder implements View.OnCli
         View.OnLongClickListener {
     public final TextView companyId;
     public final TextView companyName;
+    public final TextView companyPreviousName;
     public final CheckBox selector;
     private final WeakReference<SelectableAdapter> mAdapterWR;
     private boolean mMultiSelectMode = false;
@@ -35,6 +36,7 @@ public class CompanyHolder extends RecyclerView.ViewHolder implements View.OnCli
         selector = (CheckBox) view.findViewById(R.id.selector);
         companyId = (TextView) view.findViewById(R.id.companyId);
         companyName = (TextView) view.findViewById(R.id.companyName);
+        companyPreviousName = (TextView) view.findViewById(R.id.companyPreviousName);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             view.setOnTouchListener(new View.OnTouchListener() {
                 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -52,7 +54,6 @@ public class CompanyHolder extends RecyclerView.ViewHolder implements View.OnCli
 
     public void setMultiSelectMode(boolean isMultiSelectMode) {
         mMultiSelectMode = isMultiSelectMode;
-        selector.setEnabled(mMultiSelectMode);
     }
 
     @Override
@@ -81,14 +82,12 @@ public class CompanyHolder extends RecyclerView.ViewHolder implements View.OnCli
         companyId.setText(Html.fromHtml(id));
         float maxWidth = companyId.getPaint().measureText(maxIdFormat);
         companyId.setWidth((int) maxWidth);
-        String previousNames = cursor.getString(cursor.getColumnIndex(COMPANY_PREVIOUS_NAMES));
         String name = cursor.getString(cursor.getColumnIndex(COMPANY_NAME));
-        StringBuilder builder = new StringBuilder(name);
+        companyName.setText(Html.fromHtml(name));
+        String previousNames = cursor.getString(cursor.getColumnIndex(COMPANY_PREVIOUS_NAMES));
         if (!TextUtils.isEmpty(previousNames)) {
-            builder.append(",<br/>(");
-            builder.append(previousNames);
-            builder.append(")");
+            companyPreviousName.setText(Html.fromHtml("(" + previousNames + ")"));
+            companyPreviousName.setVisibility(View.VISIBLE);
         }
-        companyName.setText(Html.fromHtml(builder.toString()));
     }
 }

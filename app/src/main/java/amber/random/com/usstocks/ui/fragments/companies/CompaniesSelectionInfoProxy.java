@@ -7,6 +7,8 @@ import android.os.Parcelable;
 import android.support.v4.os.CancellationSignal;
 import android.util.Log;
 
+import java.util.HashMap;
+
 import javax.inject.Inject;
 
 import amber.random.com.usstocks.App;
@@ -14,6 +16,7 @@ import amber.random.com.usstocks.database.DataBaseHelperProxy;
 import amber.random.com.usstocks.ui.fragments.base.ParcelableSelectedCache;
 import amber.random.com.usstocks.ui.fragments.base.SelectionInfoProxyCapable;
 import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 
@@ -26,11 +29,11 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
     @Inject
     protected DataBaseHelperProxy mDataBaseHelper;
     private ParcelableSelectedCache mSelectedCache = new ParcelableSelectedCache();
-    private boolean mDatabaseSyncing = false;
     private Cursor mCursor;
     private CancellationSignal mCancellationSignal = new CancellationSignal();
     private int mSelectionMode = CHOICE_MODE_SINGLE;
     private Disposable mDisposable;
+    private DatabaseSynchronizable mHandler;
     private boolean mSelectionsInvalidated;
 
     public CompaniesSelectionInfoProxy(int maxCacheSize) {
@@ -40,6 +43,11 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
     }
 
     //region SelectionInfoProxyCapable implementation
+
+    @Override
+    public void setSynchronizationHandler(DatabaseSynchronizable handler) {
+        mHandler = handler;
+    }
 
     @Override
     public int getSelectionMode() {
@@ -61,15 +69,17 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
     }
 
     @Override
-    public void setSelection(int position, boolean isSelected) {
+    public boolean setSelection(int position, boolean isSelected) {
         if (mSelectionMode == CHOICE_MODE_MULTIPLE) {
             setMultipleSelection(position, isSelected);
-            mSelectionsInvalidated = false;
+            return isSelected;
         } else if (mSelectionMode == CHOICE_MODE_SINGLE) {
             setSingleSelection(position);
-            mSelectionsInvalidated = true;
-        } else
+            return true;
+        } else {
             mSelectionsInvalidated = false;
+            return false;
+        }
     }
 
     @Override
@@ -114,6 +124,7 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
 
         if (mCursor != null)
             mCursor.close();
+        mHandler = null;
     }
 
     @Override
@@ -134,37 +145,6 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
         return mCursor.getInt(1) == 1;
     }
 
-    private Observable<Boolean> launchDatabaseSync(boolean resetSelection,
-                                                   CancellationSignal cancellation) {
-
-        String filter = mFilter;
-        return Observable.fromCallable(() -> {
-            if (resetSelection)
-                mDataBaseHelper.unSelectCompanies(mFilter);
-
-            mDataBaseHelper.setSelectedCompanies(mSelectedCache);
-            cancellation.throwIfCanceled();
-            Cursor cursor = mDataBaseHelper.getCompaniesSelectedState(filter);
-            if (cancellation.isCanceled() || !mFilter.equals(filter))
-                return false;
-
-            swapCursor(cursor);
-            return true;
-        })
-                .onErrorReturn(ex -> {
-                    Log.e(getClass().getSimpleName(), "Failed to sync selected companies for filter = " + filter, ex);
-                            if (!cancellation.isCanceled())
-                                mDatabaseSyncing = false;
-                    ;
-
-                            if (!(ex instanceof SQLException))
-                                throw (Exception) ex;
-
-                            return false;
-                        }
-                );
-    }
-
     private void disposeDisposable() {
         if (mDisposable != null && !mDisposable.isDisposed()) {
             mDisposable.dispose();
@@ -176,27 +156,26 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
             mCursor.moveToPosition(position);
             int companyId = mCursor.getInt(0);
             boolean cursorIsSelected = mCursor.getInt(1) > 0;
-            if (isSelected != cursorIsSelected)
+            if (isSelected != cursorIsSelected) {
                 mSelectedCache.put(companyId, isSelected);
-            else
+            } else {
                 mSelectedCache.remove(companyId);
+            }
         }
-        if (!mDatabaseSyncing && mSelectedCache.size() > mMaxCacheSize) {
-            disposeDisposable();
-            mDisposable = launchDatabaseSync(false)
-                    .subscribeOn(Schedulers.computation())
-                    .subscribe();
+        mSelectionsInvalidated = false;
+        if (mSelectedCache.size() >= mMaxCacheSize) {
+            internalLauchDatabaseSync();
         }
     }
 
     private void setSingleSelection(int position) {
+        boolean needSync = false;
         synchronized (mLock) {
-            boolean needSync = false;
             for (mCursor.moveToFirst(); !mCursor.isAfterLast(); mCursor.moveToNext()) {
                 int companyId = mCursor.getInt(0);
                 if (mCursor.getInt(1) > 0) {
                     mSelectedCache.put(companyId, false);
-                    if (mMaxCacheSize < mSelectedCache.size()) {
+                    if (mMaxCacheSize <= mSelectedCache.size()) {
                         mSelectedCache.clear();
                         needSync = true;
                         break;
@@ -207,13 +186,24 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
 
             mCursor.moveToPosition(position);
             mSelectedCache.put(mCursor.getInt(0), true);
-            if (needSync) {
-                disposeDisposable();
-                mDisposable = launchDatabaseSync(true)
-                        .subscribeOn(Schedulers.computation())
-                        .subscribe();
-            }
         }
+
+        if (needSync) {
+            mSelectionsInvalidated = false;
+            internalLauchDatabaseSync();
+        } else
+            mSelectionsInvalidated = true;
+    }
+
+    private void internalLauchDatabaseSync() {
+        disposeDisposable();
+        mDisposable = launchDatabaseSync(true)
+                .subscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe((res) -> {
+                    if (Boolean.TRUE.equals(res) && null != mHandler)
+                        mHandler.syncCompleted();
+                });
     }
 
     private Parcelable getSelectionsInfo() {
@@ -222,18 +212,49 @@ public class CompaniesSelectionInfoProxy implements SelectionInfoProxyCapable {
 
     private void swapCursor(Cursor cursor) {
         synchronized (mLock) {
-            mDatabaseSyncing = false;
-            closeResources();
+            disposeDisposable();
+            Cursor oldCursor = mCursor;
             mCursor = cursor;
-            cursor.moveToFirst();
             mSelectedCache.clear();
+            cursor.moveToFirst();
+            if (oldCursor != null)
+                oldCursor.close();
         }
     }
 
     private Observable<Boolean> launchDatabaseSync(boolean resetSelection) {
+        HashMap<Integer, Boolean> selectedCacheCopy = new HashMap(mSelectedCache);
         mCancellationSignal.cancel();
         mCancellationSignal = new CancellationSignal();
-        mDatabaseSyncing = true;
-        return launchDatabaseSync(resetSelection, mCancellationSignal);
+        return launchDatabaseSync(resetSelection, selectedCacheCopy, mCancellationSignal);
     }
+
+    private Observable<Boolean> launchDatabaseSync(boolean resetSelection, HashMap<Integer, Boolean> selectedCache,
+                                                   CancellationSignal cancellation) {
+
+        String filter = mFilter;
+        return Observable.fromCallable(() -> {
+            if (resetSelection)
+                mDataBaseHelper.unSelectCompanies(mFilter);
+
+            mDataBaseHelper.setSelectedCompanies(selectedCache);
+            cancellation.throwIfCanceled();
+            Cursor cursor = mDataBaseHelper.getCompaniesSelectedState(filter);
+            if (cancellation.isCanceled() || !mFilter.equals(filter))
+                return false;
+
+            swapCursor(cursor);
+            return true;
+        })
+                .onErrorReturn(ex -> {
+                            Log.e(getClass().getSimpleName(), "Failed to sync selected companies for filter = " + filter, ex);
+
+                            if (!(ex instanceof SQLException))
+                                throw (Exception) ex;
+
+                            return false;
+                        }
+                );
+    }
+
 }
